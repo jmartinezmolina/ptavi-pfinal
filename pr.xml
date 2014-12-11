@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <server name = "" ip = "" puerto = ""></server>
+    <database path = "" passwdpath = ""></database>
+    <log path = ""/></log>
+</config>
