@@ -10,13 +10,13 @@ from xml.sax.handler import ContentHandler
 class XMLHandler(ContentHandler):
 
     def __init__(self):
-        self.etiquetas = {
-            'account': ['username', 'passwd'],
+        self.etiquetas = {'account': ['username', 'passwd'],
             'uaserver': ['ip', 'puerto'],
             'rtpaudio': ['puerto'],
             'regproxy': ['ip', 'puerto'],
             'log': ['path'],
             'audio': ['path']}
+            
         self.list_etiquetas = []
 
     def startElement(self, name, attrs):
@@ -40,16 +40,44 @@ class XMLHandler(ContentHandler):
             salida += "\n"
         return salida
 
-    def do_local(self):
+    def extraer_valores(self):
         for dic in self.list_etiquetas:
             for etiqueta in dic:
-                if etiqueta == "username":
-                    recurso = dic[etiqueta]
-                    print recurso
-                    #os.system("wget -q " + recurso)
-                    #elem_div = recurso.split('/')
-                    #dic[etiqueta] = elem_div[-1]
-
+                if dic["name"] == 'account':
+                        if etiqueta == "username":
+                            USERNAME = dic[etiqueta]
+                            print USERNAME
+                        if etiqueta == "passwd":
+                            PASSWD = dic[etiqueta]
+                            print PASSWD
+                if dic["name"] == 'uaserver':
+                        if etiqueta == "ip":
+                            IP_UASERVER = dic[etiqueta]
+                            print IP_UASERVER
+                        if etiqueta == "puerto":
+                            PORT_UASERVER = dic[etiqueta]
+                            print PORT_UASERVER
+                if dic["name"] == 'rtpaudio':
+                        if etiqueta == "puerto":
+                            PORT_RTPAUDIO = dic[etiqueta]
+                            print PORT_RTPAUDIO
+                if dic["name"] == 'regproxy':
+                        if etiqueta == "ip":
+                            IP_PROXY = dic[etiqueta]
+                            print IP_PROXY
+                        if etiqueta == "puerto":
+                            PORT_PROXY = dic[etiqueta]
+                            print PORT_PROXY
+                if dic["name"] == 'log':
+                        if etiqueta == "path":
+                            LOG_PATH = dic[etiqueta]
+                            print LOG_PATH
+                if dic["name"] == 'audio':
+                        if etiqueta == "path":
+                            AUDIO_PATH = dic[etiqueta]
+                            print AUDIO_PATH
+                   
+                        
 
 if __name__ == "__main__":
 
@@ -58,4 +86,4 @@ if __name__ == "__main__":
     parser.setContentHandler(chandler)
     parser.parse(open('ua1.xml'))
     print chandler.get_tags()
-    chandler.do_local()
+    chandler.extraer_valores()
