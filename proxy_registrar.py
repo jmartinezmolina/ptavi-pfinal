@@ -34,12 +34,15 @@ class XMLHandler(ContentHandler):
 """
 CLASE ECHO HANDLER
 """
+diccionario = {}
+formato_time = '%Y-%m-%d %H:%M:%S'
+
 class EchoHandler(SocketServer.DatagramRequestHandler):
     """
     Echo server class
     """
     def handle(self):
-        ip_port = self.client_address
+        ip = self.client_address[0]
         while 1:
             # Leyendo línea a línea lo que nos llega
             line = self.rfile.read()
@@ -51,12 +54,64 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             metodo = lista[0]
             metodos_SIP = ("REGISTER", "INVITE", "BYE", "ACK")
 
+            # Si el método es REGISTER
+            if metodo == "REGISTER":
+                # Primero vemos si alguien ha expirado
+                self.ver_si_expire()
+                # Cliente nuevo según su expire
+                user = lista[1].split(":")[1]
+                puerto = int(lista[1].split(":")[2])
+                expires = int(lista[4])
+                if expires > 0:
+                    if not user in diccionario:
+                        print "... entra en el dicc: " + str(user) + "\r"
+                    else:
+                        print "... modifico del dicc: " + str(user) + "\r"
+                    time_exp = time.gmtime(time.time() + expires)
+                    day_time_exp = time.strftime(formato_time, time_exp)
+                    diccionario[user] = [ip, puerto, day_time_exp]
+                    print "diccionario: " + str(diccionario) + "\r"
+                else:
+                    if user in diccionario:
+                        del diccionario[user]
+                        print "... borro del dicc a: " + str(user) + "\r"
+                        if diccionario:
+                            print "diccionario: " + str(diccionario) + "\r"
+                self.register2file()
+                respuesta = "SIP/2.0 200 OK \r\n\r\n"
 
+            else:
+                respuesta = "SIP/2.0 400 Bad Request \r\n\r\n"
 
+            print "\r\n\r\nRespondo al cliente: " + respuesta
+            self.wfile.write(respuesta)
 
+    """
+    Fichero registered.txt class
+    """
+    def register2file(self):
+        fich = open("registered.txt", 'w')
+        fich.write("Username\tIP\tPuerto\tExpires\r\n")
+        for user in diccionario.keys():
+            ip = str(diccionario[user][0])
+            puerto = str(diccionario[user][1])
+            expires = str(diccionario[user][2])
+            fich.write(user + "\t" + ip + "\t" + puerto + "\t" + expires + "\r\n")
+        fich.close()
 
-
-
+    """
+    Ver si alguien del diccionario ha expirado
+    """
+    def ver_si_expire(self):
+        for user in diccionario.keys():
+            expires = str(diccionario[user][2])
+            time_now = time.gmtime(time.time())
+            day_time_now = time.strftime(formato_time, time_now)
+            if expires <= day_time_now:
+                del diccionario[user]
+                print "... expira del dicc: " + str(user) + "\r"
+                if diccionario:
+                    print "diccionario: " + str(diccionario) + "\r"
 
 
 
