@@ -106,6 +106,7 @@ if __name__ == "__main__":
                          # ---> bien el puerto??
         LINE += xml["account_username"] + ":" + xml["uaserver_puerto"]
         LINE += " SIP/2.0" + "\r\n"
+        LINE += "Expires: " + OPCION + "\r\n"
     if METODO == "INVITE":
         LINE += OPCION + " SIP/2.0" + "\r\n"
                         # ---> bien espacios ahí?
