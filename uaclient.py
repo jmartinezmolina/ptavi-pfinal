@@ -89,36 +89,45 @@ if __name__ == "__main__":
     USERNAME = chandler.dic_etiq['account_username']
     PASSWD = chandler.dic_etiq['account_passwd']
     UASERVER_IP = chandler.dic_etiq['uaserver_ip']
-    UASERVER_PORT = chandler.dic_etiq['uaserver_puerto']
+    UASERVER_PORT = int(chandler.dic_etiq['uaserver_puerto'])
     RTPAUDIO_PORT = chandler.dic_etiq['rtpaudio_puerto']
     REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
     REGPROXY_PORT = chandler.dic_etiq['regproxy_puerto']
     LOG_PATH = chandler.dic_etiq['log_path']
     AUDIO_PATH = chandler.dic_etiq['audio_path']
     
-    print chandler.dic_etiq
+    #print chandler.dic_etiq
 
 
     if METODO == "REGISTER":
         try:
             int(OPCION)
         except ValueError:
-            print 'Usage: python uaclient.py config method option'
+            print 'Usage: python uaclient.py config REGISTER -time-expires-'
             raise SystemExit
             
-        LINE = METODO + " sip:" + DIRECCION + " SIP/2.0" + "\r\n\r\n"
-        LINE = LINE + "Expires: " + OPCION + "\r\n\r\n"
-       
+        LINE = METODO + " sip:" + USERNAME + "@" + UASERVER_IP + ":"
+        LINE += str(UASERVER_PORT) + " SIP/2.0" + "\r\n\r\n"
+        LINE = LINE + "Expires: " + OPCION + "\r\n\r\n"       
 
-    if METODO == "INVITE" or METODO == "BYE":
+    if METODO == "INVITE":
         # Contenido que vamos a enviar
-        LINE = METODO + " sip:" + LOGIN + "@" + IP_SERVER + " SIP/2.0\r\n\r\n"
+        LINE = METODO + " sip:" + USERNAME + "@"
+        LINE += UASERVER_IP + " SIP/2.0\r\n\r\n"
+        LINE += "Content-Type: application/sdp\r\n\r\n"
+        LINE += "v=0\r\n" + "o=" + USERNAME + " " + UASERVER_IP
+        LINE += "\r\ns=misesion\r\n" + "t=0\r\n" + "m=audio "
+        LINE += RTPAUDIO_PORT + " RTP"
+    
+    if METODO == "BYE":
+        LINE = METODO + " sip:" + USERNAME + "@"
+        LINE += UASERVER_IP + " SIP/2.0\r\n\r\n"
         
-        
+   
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    my_socket.connect((IP_SERVER, PORT))
+    my_socket.connect((UASERVER_IP, UASERVER_PORT))
 
     try:
         #Envio del mensaje
@@ -127,7 +136,8 @@ if __name__ == "__main__":
         #Recibimos el mensaje
         data = my_socket.recv(1024)
     except socket.error:
-        print 'Error: No server listening at ' + IP_SERVER + ' port ' + str(PORT)
+        port = str(UASERVER_PORT)
+        print 'Error: No server listening at ' + UASERVER_IP + ' port ' + port
         raise SystemExit
 
     print 'Recibido -- \r\n\r\n', data
@@ -137,7 +147,8 @@ if __name__ == "__main__":
         if data.split("\r\n\r\n")[0] == "SIP/2.0 100 Trying":
             if data.split("\r\n\r\n")[1] == "SIP/2.0 180 Ringing":
                 if data.split("\r\n\r\n")[2] == "SIP/2.0 200 OK":
-                    ack = "ACK sip:" + LOGIN + "@" + IP_SERVER + " SIP/2.0\r\n\r\n"
+                    ack = "ACK sip:" + USERNAME + "@" + UASERVER_IP
+                    ack += " SIP/2.0\r\n\r\n"
                     my_socket.send(ack + "\r\n")
 
     print "Terminando socket..."
