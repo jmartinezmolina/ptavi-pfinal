@@ -6,6 +6,7 @@ Programa User Agent Server (UAS)
 import SocketServer
 import sys
 import os
+import time
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 from uaclient import XMLHandler
@@ -20,11 +21,13 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
     """
     def handle(self):
         while 1:
-        # Leyendo línea a línea lo que nos envía el proxy del cliente
+            # Leyendo línea a línea lo que nos envía el proxy del cliente
             line = self.rfile.read()
             if not line:
                 break
             print "El cliente nos manda " + line
+            cliente_ip = self.client_address[0]
+            cliente_puerto = self.client_address[1] 
             
             # Ver si el método llegado es correcto
             metodo = line.split()[0]
@@ -40,13 +43,12 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 if protocolo == "sip" and "@" in direc and sip_v == "SIP/2.0":
                     
                     # Creamos el SDP a mandar con el "200 OK"
-                    SDP_uas = "Content-Type: application/sdp" + "\r\n\r\n"
-                            # ---> bien los espacios?
-                    SDP_uas += "v=0" + "\r\n" 
+                    SDP_uas = "Content-Type: application/sdp\r\n\r\n"
+                    SDP_uas += "v=0\r\n" 
                             # ---> que ip? la de proxy o la de server?
                     SDP_uas += "o=" + xml["account_username"] + " " + xml["uaserver_ip"] + "\r\n" 
-                    SDP_uas += "s=sesion_uas" + "\r\n" + "t=0" + "\r\n" 
-                    SDP_uas += "m=audio " + xml["rtpaudio_puerto"] + " RTP" + "\r\n"
+                    SDP_uas += "s=sesion_uas\r\n" + "t=0\r\n" 
+                    SDP_uas += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
 
                     # Responder según el método recibido
                     if metodo == 'INVITE':
@@ -55,9 +57,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
 
                         for cab in SDP_uac:
                             if cab.split("=")[0] == "o":
-                                uac_ip = cab + 1
+                                uac_o_server_ip = cab + 1
                             elif cab.split("=")[0] == "m":
-                                uac_rtp_puerto = cab + 1
+                                uac_m_rtp_puerto = cab + 1
 
                                 #---> puedo dar por hecho eso? q lo mande como diccionario? for?
                         #uac_rtp_puerto = SDP_uac[-2]
@@ -73,12 +75,13 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         # run: lo que se ha de ejecutar en la shell
                                     #---> ip del proxy o del q le llega la petición?
                                     #---> ip_clt = str(self.client_address[0])
-                        run = './mp32rtp -i ' + uac_ip + " -p " + uac_rtp_puerto 
-                        run += " < " + xml["log_path"]
+                        run = './mp32rtp -i ' + uac_o_server_ip + " -p " + uac_m_rtp_puerto 
+                        run += " < " + xml["audio_path"]
                         print "Vamos a ejecutar", run
                         os.system(run)
                         print "\r\nEl fichero de audio ha finalizado\r\n\r\n"
                     elif metodo == 'BYE':
+                        #---> SDP también en el BYE?
                         LINE = "SIP/2.0 200 OK\r\n" + SDP_uas + "\r\n\r\n"
                         self.wfile.write(LINE)
                         print 'Enviando: ' + LINE
@@ -114,10 +117,15 @@ if __name__ == "__main__":
     """
     PARSER CON LOS VALORES DE XML
     """
+    # Herencia del cliente
     parser = make_parser()
     sHandler = XMLHandler()
     parser.setContentHandler(sHandler)
-    parser.parse(open(CONFIG))
+    try:
+        parser.parse(open(CONFIG))
+    except IOError:
+        print "Usage: python uaserver.py config"
+        raise SystemExit
     xml = sHandler.get_tags()
 
 
