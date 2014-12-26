@@ -32,37 +32,42 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             # Ver si el método llegado es correcto
             metodo = line.split()[0]
             metodos_SIP = ("INVITE", "BYE", "ACK")
+
             if not metodo in metodos_SIP:
                 self.wfile.write('SIP/2.0 405 Method Not Allowed\r\n\r\n')
                 print 'Enviando: SIP/2.0 405 Method Not Allowed\r\n\r\n'
+            
             else:
                 # Ver si la petición está bien formada
                 protocolo = line.split()[1].split(':')[0]
                 direc = line.split()[1].split(':')[1]
                 sip_v = line.split()[2]
+
                 if protocolo == "sip" and "@" in direc and sip_v == "SIP/2.0":
-                    
-                    # Creamos el SDP a mandar con el "200 OK"
-                    SDP_uas = "Content-Type: application/sdp\r\n\r\n"
-                    SDP_uas += "v=0\r\n" 
-                            # ---> que ip? la de proxy o la de server?
-                    SDP_uas += "o=" + xml["account_username"] + " " + xml["uaserver_ip"] + "\r\n" 
-                    SDP_uas += "s=sesion_uas\r\n" + "t=0\r\n" 
-                    SDP_uas += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
 
                     # Responder según el método recibido
                     if metodo == 'INVITE':
+                        # Creamos el SDP a mandar con el "200 OK"
+                        SDP_uas = "Content-Type: application/sdp\r\n\r\n"
+                        SDP_uas += "v=0\r\n" 
+                                # ---> que ip? la de proxy o la de server?
+                        SDP_uas += "o=" + xml["account_username"] + " " + xml["uaserver_ip"] + "\r\n" 
+                        SDP_uas += "s=sesion_uas\r\n" + "t=0\r\n" 
+                        SDP_uas += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
+
                         # Llega SDP del cliente, obtenemos los valores deseados
                         SDP_uac = line.split()[3:]
 
-                        for cab in SDP_uac:
-                            if cab.split("=")[0] == "o":
-                                uac_o_server_ip = cab + 1
-                            elif cab.split("=")[0] == "m":
-                                uac_m_rtp_puerto = cab + 1
+                       # for cab in SDP_uac:
+                        #    if cab.split("=")[0] == "o":
+                        #        uac_o_server_ip = cab.split("=")[1]
+                        #    elif cab.split("=")[0] == "m":
+                        #        uac_m_rtp_puerto = cab + 1
 
                                 #---> puedo dar por hecho eso? q lo mande como diccionario? for?
                         #uac_rtp_puerto = SDP_uac[-2]
+                        uac_o_server_ip = SDP_uac[-6]
+                        uac_m_rtp_puerto = SDP_uac[-2]
     
                         self.wfile.write('SIP/2.0 100 Trying\r\n\r\n')
                         print 'Enviando: ' + 'SIP/2.0 100 Trying\r\n\r\n'
@@ -71,6 +76,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         LINE = "SIP/2.0 200 OK\r\n" + SDP_uas + "\r\n\r\n"
                         self.wfile.write(LINE)
                         print 'Enviando: ' + LINE
+
                     elif metodo == 'ACK':
                         # run: lo que se ha de ejecutar en la shell
                                     #---> ip del proxy o del q le llega la petición?
@@ -80,6 +86,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         print "Vamos a ejecutar", run
                         os.system(run)
                         print "\r\nEl fichero de audio ha finalizado\r\n\r\n"
+
                     elif metodo == 'BYE':
                         #---> SDP también en el BYE?
                         LINE = "SIP/2.0 200 OK\r\n" + SDP_uas + "\r\n\r\n"
