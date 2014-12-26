@@ -75,7 +75,6 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
                         print 'Responde: SIP/2.0 400 Bad Request\r\n\r\n'
                     sip_v = lista[2]
-
                     if protocolo == "sip" and "@" in user and sip_v == "SIP/2.0":
 
                         # Primero vemos si alguien ha expirado
@@ -114,14 +113,14 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     protocolo = lista[1].split(':')[0]
                     name = lista[1].split(':')[1]
                     sip_v = lista[2]
-
                     if protocolo == "sip" and "@" in name and sip_v == "SIP/2.0":
-
+                        
+                                        # ---> ver eso tanto en invite como en ack y bye?
                         # Primero vemos si alguien ha expirado
                         self.ver_si_expire()
-                        # Vemos si está registrado al que se quiere hacer invite
+                        # Vemos si está registrado al que se quiere reenviar
                         registrado = 0
-                        self.ver_si_registered(name, registrado)
+                        registrado = self.ver_si_registered(name, registrado)
 
                         # Si está registrado y no ha expirado lo reenvío
                         if registrado == 1:
@@ -131,7 +130,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                             print "\nReenviando: " + line
                             my_socket.send(line + '\r\n')
                     
-                            # Si el método es INVITE espero recibir
+                            # Si el método es INVITE o BYE además espero recibir
                             if metodo == "INVITE" or "BYE":
                                 # Error si el servidor no está lanzado
                                 try:
@@ -142,7 +141,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                     error += str(diccionario[name][1]) + "\r\n"
                                     print error
                                     raise SystemExit
-                                # Recibo respuesta y la envío al que solicitó el invite
+                                # Recibo respuesta y la envío al que solicitó el invite o bye
                                 print 'Recibido -- ', data
                                 self.wfile.write(data)
                                 print "Responde: " + data
@@ -177,10 +176,10 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
     """
     def ver_si_expire(self):
         for user in diccionario.keys():
-            expires = str(diccionario[user][2])
-            time_now = time.gmtime(time.time())
-            day_time_now = time.strftime(formato_time, time_now)
-            if expires <= day_time_now:
+            expires = str(diccionario[user][3])
+            time_now1 = time.gmtime(time.time())
+            day_time_now1 = time.strftime(formato_time, time_now1)
+            if expires <= day_time_now1:
                 del diccionario[user]
                 print "... expira del dicc: " + str(user) + "\r"
                 if diccionario:
@@ -192,10 +191,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
     def ver_si_registered(self, name, registrado):
         for user in diccionario.keys():
             if name == user:
-                registrado = 1
-            else:
-                registrado = 0            
-
+                registrado = 1 
+        return registrado     
 
 
 if __name__ == "__main__":
