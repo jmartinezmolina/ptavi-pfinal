@@ -4,6 +4,7 @@
 Programa de Proxy-Registrar
 """
 import SocketServer
+import socket
 import sys
 import time
 from xml.sax import make_parser
@@ -60,6 +61,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 self.ver_si_expire()
                 # Cliente nuevo según su expire
                 user = lista[1].split(":")[1]
+                            #---> ese puerto o del que le llega?
                 puerto = int(lista[1].split(":")[2])
                 expires = int(lista[4])
                 if expires > 0:
@@ -67,9 +69,11 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         print "... entra en el dicc: " + str(user) + "\r"
                     else:
                         print "... modifico del dicc: " + str(user) + "\r"
+                    time_now = time.gmtime(time.time())
+                    day_time_now = time.strftime(formato_time, time_now)
                     time_exp = time.gmtime(time.time() + expires)
                     day_time_exp = time.strftime(formato_time, time_exp)
-                    diccionario[user] = [ip, puerto, day_time_exp]
+                    diccionario[user] = [ip, puerto, day_time_now, day_time_exp]
                     print "diccionario: " + str(diccionario) + "\r"
                 else:
                     if user in diccionario:
@@ -79,6 +83,22 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                             print "diccionario: " + str(diccionario) + "\r"
                 self.register2file()
                 respuesta = "SIP/2.0 200 OK \r\n\r\n"
+            
+            # Si el método es INVITE
+            elif metodo == "INVITE":
+                        # ---> mirar si ha expirado?
+                # Primero vemos si alguien ha expirado
+                self.ver_si_expire()
+                # Vemos si está registrado al que se quiere hacer invite
+                name_invite = lista[1].split(":")[1]
+                registrado = 0
+                self.ver_si_registered(name_invitado, registrado)
+                if registrado == 0:
+
+                else:
+                
+
+
 
             else:
                 respuesta = "SIP/2.0 400 Bad Request \r\n\r\n"
@@ -86,17 +106,22 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             print "\r\n\r\nRespondo al cliente: " + respuesta
             self.wfile.write(respuesta)
 
+
+
+
+
     """
     Fichero registered.txt class
     """
     def register2file(self):
         fich = open("registered.txt", 'w')
-        fich.write("Username\tIP\tPuerto\tExpires\r\n")
+        fich.write("Username\tIP\tPuerto\tRegistro\tExpires\r\n")
         for user in diccionario.keys():
             ip = str(diccionario[user][0])
             puerto = str(diccionario[user][1])
-            expires = str(diccionario[user][2])
-            fich.write(user + "\t" + ip + "\t" + puerto + "\t" + expires + "\r\n")
+            registro = str(diccionario[user][2])
+            expires = str(diccionario[user][3])
+            fich.write(user + "\t" + ip + "\t" + puerto + "\t" + registro + "\t" + expires + "\r\n")
         fich.close()
 
     """
@@ -112,6 +137,16 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 print "... expira del dicc: " + str(user) + "\r"
                 if diccionario:
                     print "diccionario: " + str(diccionario) + "\r"
+
+    """
+    Ver si está en el fichero registered.txt
+    """
+    def ver_si_registered(self, name_invite, registrado):
+        for user in diccionario.keys():
+            if name_invite == user:
+                registrado = 1
+            else
+                registrado = 0            
 
 
 
@@ -144,7 +179,11 @@ if __name__ == "__main__":
     parser = make_parser()
     sHandler = XMLHandler()
     parser.setContentHandler(sHandler)
-    parser.parse(open(CONFIG))
+    try:
+        parser.parse(open(CONFIG))
+    except IOError:
+        print "Usage: python proxy_registrar.py config"
+        raise SystemExit
     xml = sHandler.get_tags()
 
 
@@ -153,6 +192,6 @@ if __name__ == "__main__":
     """
     # Creamos servidor de eco y escuchamos
             # ---> q puerto ponemos?
-    serv = SocketServer.UDPServer(("", int(xml["server_puerto"])), EchoHandler)
+    serv = SocketServer.UDPServer((xml["server_ip"]), int(xml["server_puerto"])), EchoHandler)
     print "\nServer " + xml["server_name"] + " listening at port " + xml["server_puerto"] + "...\r\n"
     serv.serve_forever()
