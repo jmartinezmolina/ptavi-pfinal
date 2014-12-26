@@ -5,6 +5,8 @@ Programa User Agent Client (UAC)
 """
 import socket
 import sys
+import time
+import os
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
@@ -141,6 +143,7 @@ if __name__ == "__main__":
         print "Error: No server listening at " + xml["regproxy_ip"] + " port " + str(xml["regproxy_puerto"]) + "\r\n"
         raise SystemExit
 
+    # Recibo respuesta
     print 'Recibido -- ', data
 
                         #---> separo por solo un \r\n?
