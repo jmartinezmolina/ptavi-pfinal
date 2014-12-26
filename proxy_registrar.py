@@ -51,7 +51,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             print "Recibimos: " + line
             lista = line.split()
             ip = self.client_address[0]
-                        # --->El proxy debe ver si está bien el método y petición o reenvía lo que llegue?
+                        # ---> El proxy debe ver si está bien el método y petición o reenvía lo que llegue?
             # Ver si el método llegado es correcto
             metodo = lista[0]
             metodos_SIP = ("REGISTER", "INVITE", "BYE", "ACK")
@@ -61,22 +61,26 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 print 'Respondo: SIP/2.0 405 Method Not Allowed\r\n\r\n'
             
             else:
-                # Ver si la petición está bien formada
-                protocolo = line.split()[1].split(':')[0]
-                direc = line.split()[1].split(':')[1]
-                sip_v = line.split()[2]
+                # Si el método es REGISTER
+                if metodo == "REGISTER":
 
-                if protocolo == "sip" and "@" in direc and sip_v == "SIP/2.0":
+                    # Ver si la petición está bien formada
+                    protocolo = lista[1].split(':')[0]
+                    user = lista[1].split(':')[1]
+                    try:
+                         #---> ese puerto o del que le llega? self.client_address[1] 
+                        puerto = int(lista[1].split(":")[2])
+                        expires = int(lista[4])
+                    except ValueError:
+                        self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
+                        print 'Responde: SIP/2.0 400 Bad Request\r\n\r\n'
+                    sip_v = lista[2]
 
-                    # Si el método es REGISTER
-                    if metodo == "REGISTER":
+                    if protocolo == "sip" and "@" in user and sip_v == "SIP/2.0":
+
                         # Primero vemos si alguien ha expirado
                         self.ver_si_expire()
                         # Cliente nuevo según su expire
-                        user = lista[1].split(":")[1]
-                                    #---> ese puerto o del que le llega? self.client_address[1] 
-                        puerto = int(lista[1].split(":")[2])
-                        expires = int(lista[4])
                         if expires > 0:
                             if not user in diccionario:
                                 print "... entra en el dicc: " + str(user) + "\r"
@@ -98,49 +102,60 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         print "Respondo: SIP/2.0 200 OK\r\n\r\n"
                         self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
                     
-                    # Si el método es INVITE
-                    elif metodo == "INVITE":
+                    # Si la petición no está bien formada
+                    else: 
+                        self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
+                        print 'Responde: SIP/2.0 400 Bad Request\r\n\r\n'
+
+                # Si el método es INVITE, ACK o BYE
+                elif metodo == "INVITE" or "ACK" or "BYE":
+
+                    # Ver si la petición está bien formada
+                    protocolo = lista[1].split(':')[0]
+                    name = lista[1].split(':')[1]
+                    sip_v = lista[2]
+
+                    if protocolo == "sip" and "@" in name and sip_v == "SIP/2.0":
+
                         # Primero vemos si alguien ha expirado
                         self.ver_si_expire()
                         # Vemos si está registrado al que se quiere hacer invite
-                        name_invite = lista[1].split(":")[1]
                         registrado = 0
-                        self.ver_si_registered(name_invitado, registrado)
+                        self.ver_si_registered(name, registrado)
 
-                        # Si está registrado y no ha expirado lo reenvío al que va el invite
+                        # Si está registrado y no ha expirado lo reenvío
                         if registrado == 1:
                             my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                            my_socket.connect((diccionario[name_invite][0], diccionario[name_invite][1]))
+                            my_socket.connect((diccionario[name][0], diccionario[name][1]))
                             print "\nReenviando: " + line
                             my_socket.send(line + '\r\n')
-                            # Error si el servidor no está lanzado
-                            try:
-                                data = my_socket.recv(1024)
-                            except socket.error:
-                                error = "Error: No server listening at "
-                                error += diccionario[name_invite][0] + " port "
-                                error += str(diccionario[name_invite][1]) + "\r\n"
-                                print error
-                                raise SystemExit
-                            # Recibo respuesta y la envío al que solicitó el invite
-                            print 'Recibido -- ', data
-                            self.wfile.write(data)
-                            print "Respondo: " + data
+                    
+                            # Si el método es INVITE espero recibir
+                            if metodo == "INVITE" or "BYE":
+                                # Error si el servidor no está lanzado
+                                try:
+                                    data = my_socket.recv(1024)
+                                except socket.error:
+                                    error = "Error: No server listening at "
+                                    error += diccionario[name][0] + " port "
+                                    error += str(diccionario[name][1]) + "\r\n"
+                                    print error
+                                    raise SystemExit
+                                # Recibo respuesta y la envío al que solicitó el invite
+                                print 'Recibido -- ', data
+                                self.wfile.write(data)
+                                print "Responde: " + data
 
                         # Si no está registrado o sí lo estaba pero ha expirado
                         else:
-                            print "Respondo: SIP/2.0 404 User Not Found\r\n\r\n"
+                            print "Responde: SIP/2.0 404 User Not Found\r\n\r\n"
                             self.wfile.write('SIP/2.0 404 User Not Found\r\n\r\n')
 
-                    #elif metodo == "BYE":
-
-
-                    #elif metodo == "ACK":
-                    
-                else:
-                    self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
-                    print 'Respondo: SIP/2.0 400 Bad Request\r\n\r\n'
+                    # Si la petición no está bien formada
+                    else: 
+                        self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
+                        print 'Responde: SIP/2.0 400 Bad Request\r\n\r\n'
 
 
     """
@@ -174,9 +189,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
     """
     Ver si está en el fichero registered.txt
     """
-    def ver_si_registered(self, name_invite, registrado):
+    def ver_si_registered(self, name, registrado):
         for user in diccionario.keys():
-            if name_invite == user:
+            if name == user:
                 registrado = 1
             else:
                 registrado = 0            
