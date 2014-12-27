@@ -146,25 +146,22 @@ if __name__ == "__main__":
     # Recibo respuesta
     print 'Recibido -- ', data
 
-                        #---> separo por solo un \r\n?
     data_serv = data.split('\r\n')
-
 
     # Si recibe esos códigos, envía el ACK y el audio RTP
     if METODO == 'INVITE':
         if data_serv[0] == 'SIP/2.0 100 Trying':
-            if data_serv[1] == 'SIP/2.0 180 Ringing':
-                if data_serv[2] == 'SIP/2.0 200 OK':
+            if data_serv[2] == 'SIP/2.0 180 Ringing':
+                if data_serv[4] == 'SIP/2.0 200 OK':
                     LINE = "ACK sip:" + OPCION + " SIP/2.0\r\n"
                     print "Enviando: " + LINE
                     my_socket.send(LINE + '\r\n')
                     # ENVIO RTP tras el ACK
-                    ip_rtp = data_serv[6].split(' ')[1]
-                                #---> eliminar esos print
-                    print "ESTO ES LA IP_RTP" + ip_rtp
-                    puerto_rtp = data_serv[9].split(' ')[1]
-                    print "ESTO ES EL PUERTO RTP" + ip_rtp
+                        # ---> esto es así??
+                    ip_rtp = data_serv[8].split(' ')[1]
+                    puerto_rtp = data_serv[11].split(' ')[1]
                     # run: lo que se ha de ejecutar en la shell
+                                # ---> lo manda directamente no???
                     run = './mp32rtp -i ' + ip_rtp + " -p " + puerto_rtp
                     run += " < " + xml["audio_path"]
                     print "Vamos a ejecutar", run
