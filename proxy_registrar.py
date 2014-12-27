@@ -128,10 +128,11 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                             my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                             my_socket.connect((diccionario[name][0], diccionario[name][1]))
                             print "\nReenviando: " + line
-                            my_socket.send(line + '\r\n')
-                    
+                                    # ---> con el barra n??
+                            my_socket.send(line)
+
                             # Si el método es INVITE o BYE además espero recibir
-                            if metodo == "INVITE" or "BYE":
+                            if not metodo == "ACK":
                                 # Error si el servidor no está lanzado
                                 try:
                                     data = my_socket.recv(1024)
@@ -144,7 +145,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                 # Recibo respuesta y la envío al que solicitó el invite o bye
                                 print 'Recibido -- ', data
                                 self.wfile.write(data)
-                                print "Responde: " + data
+                                print "Reenviando: " + data
 
                         # Si no está registrado o sí lo estaba pero ha expirado
                         else:
@@ -191,7 +192,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
     def ver_si_registered(self, name, registrado):
         for user in diccionario.keys():
             if name == user:
-                registrado = 1 
+                registrado = 1
+                print str(name) + " si está registrado...\r"
         return registrado     
 
 
