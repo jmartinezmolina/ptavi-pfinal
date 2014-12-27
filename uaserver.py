@@ -15,6 +15,9 @@ from uaclient import XMLHandler
 """
 CLASE ECHO HANDLER
 """
+SDP_uac_ip = ""
+SDP_uac_puerto = 0
+
 class EchoHandler(SocketServer.DatagramRequestHandler):
     """
     Echo server class
@@ -26,6 +29,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             if not line:
                 break
             print "El cliente nos manda " + line
+
             cliente_ip = self.client_address[0]
             cliente_puerto = self.client_address[1] 
             
@@ -65,10 +69,10 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         #        uac_m_rtp_puerto = cab + 1
 
                                 #---> puedo dar por hecho eso? q lo mande como diccionario? for?
-                        #uac_rtp_puerto = SDP_uac[-2]
-                        uac_o_server_ip = SDP_uac[-6]
-                        uac_m_rtp_puerto = SDP_uac[-2]
+                        Lista_SDP_uac = [SDP_uac[-6], SDP_uac[-2]]
+                        Dicc_SDP_uac['key'] = Lista_SDP_uac
     
+                                # ---> bien dos barra n no?
                         self.wfile.write('SIP/2.0 100 Trying\r\n\r\n')
                         print 'Enviando: ' + 'SIP/2.0 100 Trying\r\n\r\n'
                         self.wfile.write('SIP/2.0 180 Ringing\r\n\r\n')
@@ -78,18 +82,20 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         print 'Enviando: ' + LINE
 
                     elif metodo == 'ACK':
+                        ip = Dicc_SDP_uac['key'][0]
+                        puerto = str(Dicc_SDP_uac['key'][1])
                         # run: lo que se ha de ejecutar en la shell
                                     #---> ip del proxy o del q le llega la petición?
                                     #---> ip_clt = str(self.client_address[0])
-                        run = './mp32rtp -i ' + uac_o_server_ip + " -p " + uac_m_rtp_puerto 
+                        run = './mp32rtp -i ' + ip + " -p " + puerto 
                         run += " < " + xml["audio_path"]
                         print "Vamos a ejecutar", run
                         os.system(run)
                         print "\r\nEl fichero de audio ha finalizado\r\n\r\n"
 
                     elif metodo == 'BYE':
-                        #---> SDP también en el BYE?
-                        LINE = "SIP/2.0 200 OK\r\n" + SDP_uas + "\r\n\r\n"
+                                    #---> SDP también en el BYE?
+                        LINE = "SIP/2.0 200 OK\r\n\r\n"
                         self.wfile.write(LINE)
                         print 'Enviando: ' + LINE
                 
@@ -135,6 +141,12 @@ if __name__ == "__main__":
         raise SystemExit
     xml = sHandler.get_tags()
 
+
+    """
+    """
+    Dicc_SDP_uac = {}
+    print "imprimimos diccionariooooo"
+    print Dicc_SDP_uac
 
     """
     SOCKET
