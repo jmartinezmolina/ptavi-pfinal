@@ -154,6 +154,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                     line_log += str(p_send) + "\r\n"
                                     print line_log
                                     # log
+                                    log = open(xml["log_path"], 'a')
                                     log.write(form_log + ' ' + line_log)
                                     raise SystemExit
                                 # Recibo respuesta
@@ -281,7 +282,7 @@ if __name__ == "__main__":
     # log
     log = open(xml["log_path"], 'a')
     inicio = "Server " + server_n + " listening at port "
-    inicio += server_p + "...\r\n"
+    inicio += str(server_p) + "...\r\n"
     print "\n" + inicio
     log.write(form_log + ' ' + inicio)
     log.close()
