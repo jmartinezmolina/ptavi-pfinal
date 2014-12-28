@@ -72,7 +72,6 @@ if __name__ == "__main__":
     if METODO == "REGISTER":
         try:
             OPCION = int(OPCION)
-                    # ---> que pasa si expires es 0?
         except ValueError:
             print "Usage: python uaclient.py config method option"
             raise SystemExit
@@ -105,46 +104,66 @@ if __name__ == "__main__":
     """
     ENVIO AL SERVER
     """
+    # log
+    log = open(xml["log_path"], 'a')
+    print '\nStarting...'
+    log.write("\r\n" + time.strftime('%Y%m%d%H%M%S') + ' ' + 'Starting...\r\n')
+    send_to = "Sent to " + xml["regproxy_ip"] + ":" + xml["regproxy_puerto"]
+    print "\n" + send_to
+
     # Contenido que vamos a enviar dependiendo del metodo
-    LINE = METODO + " sip:"
+    line_send = METODO + " sip:"
 
     if METODO == "REGISTER":
-                         # ---> bien el puerto??
-        LINE += xml["account_username"] + ":" + xml["uaserver_puerto"]
-        LINE += " SIP/2.0\r\n"
-        LINE += "Expires: " + str(OPCION) + "\r\n"
+        line_send += xml["account_username"] + ":" + xml["uaserver_puerto"]
+        line_send += " SIP/2.0\r\n"
+        line_send += "Expires: " + str(OPCION) + "\r\n"
+        # log
+        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
     if METODO == "INVITE":
-        LINE += OPCION + " SIP/2.0\r\n"
+        line_send += OPCION + " SIP/2.0\r\n"
                         # ---> bien espacios ahí?
-        LINE += "Content-Type: application/sdp\r\n\r\n"
-        LINE += "v=0\r\n" 
-                        # ---> que ip? la de proxy o la de server?
-        LINE += "o=" + xml["account_username"] + " " + xml["uaserver_ip"] + "\r\n" 
-        LINE += "s=sesion_uac\r\n" + "t=0\r\n" 
-        LINE += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
+        line_send += "Content-Type: application/sdp\r\n\r\n"
+        line_send += "v=0\r\n" 
+        line_send += "o=" + xml["account_username"] + " " + xml["uaserver_ip"] + "\r\n" 
+        line_send += "s=sesion_uac\r\n" + "t=0\r\n" 
+        line_send += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
+        # log
+        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
     if METODO == "BYE":
-                    # ---> q pasa si no ha acado el rtp? 
-                    # ---> y como contemplo aqui q me llegue un bye del server?
-        LINE += OPCION + " SIP/2.0\r\n"
+        line_send += OPCION + " SIP/2.0\r\n"
+        # log
+        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                        # ---> error si el proxy o el server no están conectados?
     my_socket.connect((xml["regproxy_ip"], int(xml["regproxy_puerto"])))
-
-    print "\nEnviando: " + LINE
-    my_socket.send(LINE + '\r\n')
+    
+    my_socket.send(line_send + '\r\n')
+    print "\nEnviando: " + line_send
 
     # Error si el servidor no está lanzado
     try:
         data = my_socket.recv(1024)
     except socket.error:
-        print "Error: No server listening at " + xml["regproxy_ip"] + " port " + str(xml["regproxy_puerto"]) + "\r\n"
+        line_log = "Error: No server listening at " + xml["regproxy_ip"]
+        line_log += " port " + str(xml["regproxy_puerto"]) + "\r\n"
+        print line_log
+        # log
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
         raise SystemExit
 
     # Recibo respuesta
-    print 'Recibido -- ', data
+    # log
+    rec_from = "Received from " + xml["regproxy_ip"] + ":" + xml["regproxy_puerto"]
+    print "\n" + rec_from
+    line_log = rec_from + ": " + data.replace('\r\n', ' ') + '\r\n'
+    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+    print "\nRecibido -- " + data
 
     data_serv = data.split('\r\n')
 
@@ -153,34 +172,37 @@ if __name__ == "__main__":
         if data_serv[0] == 'SIP/2.0 100 Trying':
             if data_serv[2] == 'SIP/2.0 180 Ringing':
                 if data_serv[4] == 'SIP/2.0 200 OK':
-                    LINE = "ACK sip:" + OPCION + " SIP/2.0\r\n"
-                    print "Enviando: " + LINE
-                    my_socket.send(LINE + '\r\n')
+                    line_send = "ACK sip:" + OPCION + " SIP/2.0\r\n"
+                    # log
+                    send_to = "Sent to " + xml["regproxy_ip"] + ":" + xml["regproxy_puerto"]
+                    print send_to
+                    line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+                    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                    my_socket.send(line_send + '\r\n')
+                    print "\nEnviando: " + line_send
+
                     # ENVIO RTP tras el ACK
-                        # ---> esto es así??
+                                    # ---> esto es así??
                     ip_rtp = data_serv[8].split(' ')[1]
                     puerto_rtp = data_serv[11].split(' ')[1]
                     # run: lo que se ha de ejecutar en la shell
-                                # ---> lo manda directamente no???
+                                    # ---> lo manda directamente no???
                     run = './mp32rtp -i ' + ip_rtp + " -p " + puerto_rtp
                     run += " < " + xml["audio_path"]
                     print "Vamos a ejecutar", run
                     os.system(run)
+                    # log
+                    line_send = "Sent to " + ip_rtp + ':' + str(puerto_rtp)
+                    print line_send
+                    line_log = line_send + ": " + "RTP audio\r\n"
+                    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
                     print "\r\nEl fichero de audio ha finalizado\r\n\r\n"    
-    # Si le ha enviado un BYE y recibe ese código, se finaliza la conexión
-    elif METODO == 'BYE':
-        if data_serv[0] == 'SIP/2.0 200 OK':
-            print "Se cierra la conexión con el servidor...\r\n"
-    # Si le ha enviado un REGISTER y recibe ese código, se finaliza la conexión
-        # dependiendo del valor del expire
-    elif METODO == 'REGISTER':
-        if OPCION == "0":
-            print "Se cierra la conexión con el servidor...\r\n"
-    else:
-                #---> log
-        print "Linea log"   
+
+        # ---> da igual que nos llegue o no un 200 ok del register o el bye no?
 
     # Cerramos el socket
-    print "Terminando socket..."
+    # log
+    line_log = "Finishing.\r\n"
+    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
     my_socket.close()
-    print "\nFin.\r\n"
+    print line_log
