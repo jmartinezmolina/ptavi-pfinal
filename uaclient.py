@@ -89,6 +89,29 @@ if __name__ == "__main__":
 
 
     """
+    Guardar mensajes de depuración de envío en .log
+    """
+    def log_send(ip, puerto, line_send):
+        log = open(xml["log_path"], 'a')
+        send_to = "Sent to " + ip + ":" + str(puerto)
+        print "\n" + send_to
+        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log) 
+        print '\nEnviando: ' + line_send 
+
+    """
+    Guardar mensajes de depuración de recibo en .log
+    """
+    def log_rec(ip, puerto, line_rec):
+        log = open(xml["log_path"], 'a')
+        rec_from = 'Received from ' +  ip + ":" + str(puerto)
+        print "\n" + rec_from
+        line_log = rec_from + ": " + line_rec.replace('\r\n', ' ') + '\r\n'
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+        print "\nRecibido -- " + line_rec
+
+
+    """
     PARSER CON LOS VALORES DE XML
     """
     parser = make_parser()
@@ -107,9 +130,7 @@ if __name__ == "__main__":
     # log
     log = open(xml["log_path"], 'a')
     print '\nStarting...'
-    log.write("\r\n" + time.strftime('%Y%m%d%H%M%S') + ' ' + 'Starting...\r\n')
-    send_to = "Sent to " + xml["regproxy_ip"] + ":" + xml["regproxy_puerto"]
-    print "\n" + send_to
+    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Starting...\r\n')
 
     # Contenido que vamos a enviar dependiendo del metodo
     line_send = METODO + " sip:"
@@ -118,9 +139,7 @@ if __name__ == "__main__":
         line_send += xml["account_username"] + ":" + xml["uaserver_puerto"]
         line_send += " SIP/2.0\r\n"
         line_send += "Expires: " + str(OPCION) + "\r\n"
-        # log
-        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+        log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
     if METODO == "INVITE":
         line_send += OPCION + " SIP/2.0\r\n"
                         # ---> bien espacios ahí?
@@ -129,22 +148,16 @@ if __name__ == "__main__":
         line_send += "o=" + xml["account_username"] + " " + xml["uaserver_ip"] + "\r\n" 
         line_send += "s=sesion_uac\r\n" + "t=0\r\n" 
         line_send += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
-        # log
-        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+        log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
     if METODO == "BYE":
         line_send += OPCION + " SIP/2.0\r\n"
-        # log
-        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+        log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     my_socket.connect((xml["regproxy_ip"], int(xml["regproxy_puerto"])))
-    
     my_socket.send(line_send + '\r\n')
-    print "\nEnviando: " + line_send
 
     # Error si el servidor no está lanzado
     try:
@@ -158,13 +171,7 @@ if __name__ == "__main__":
         raise SystemExit
 
     # Recibo respuesta
-    # log
-    rec_from = "Received from " + xml["regproxy_ip"] + ":" + xml["regproxy_puerto"]
-    print "\n" + rec_from
-    line_log = rec_from + ": " + data.replace('\r\n', ' ') + '\r\n'
-    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
-    print "\nRecibido -- " + data
-
+    log_rec(xml["regproxy_ip"], xml["regproxy_puerto"], data)
     data_serv = data.split('\r\n')
 
     # Si recibe esos códigos, envía el ACK y el audio RTP
@@ -173,13 +180,8 @@ if __name__ == "__main__":
             if data_serv[2] == 'SIP/2.0 180 Ringing':
                 if data_serv[4] == 'SIP/2.0 200 OK':
                     line_send = "ACK sip:" + OPCION + " SIP/2.0\r\n"
-                    # log
-                    send_to = "Sent to " + xml["regproxy_ip"] + ":" + xml["regproxy_puerto"]
-                    print send_to
-                    line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-                    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                    log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
                     my_socket.send(line_send + '\r\n')
-                    print "\nEnviando: " + line_send
 
                     # ENVIO RTP tras el ACK
                                     # ---> esto es así??
@@ -191,12 +193,9 @@ if __name__ == "__main__":
                     run += " < " + xml["audio_path"]
                     print "Vamos a ejecutar", run
                     os.system(run)
-                    # log
-                    line_send = "Sent to " + ip_rtp + ':' + str(puerto_rtp)
-                    print line_send
-                    line_log = line_send + ": " + "RTP audio\r\n"
-                    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
-                    print "\r\nEl fichero de audio ha finalizado\r\n\r\n"    
+                    line_send = "RTP audio\r\n"
+                    log_send(ip_rtp, puerto_rtp, line_send)
+                    print "\r\nEl fichero de audio ha finalizado\r\n\r\n"   
 
         # ---> da igual que nos llegue o no un 200 ok del register o el bye no?
 
