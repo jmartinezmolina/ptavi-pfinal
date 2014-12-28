@@ -180,6 +180,6 @@ if __name__ == "__main__":
     log.close()
     # Creamos servidor de eco y escuchamos
     server_ip = xml["uaserver_ip"]
-    server_puerto = int(xml["uaserver_puerto"])
-    serv = SocketServer.UDPServer((server_ip, server_puerto)), EchoHandler)
+    server_p = int(xml["uaserver_puerto"])
+    serv = SocketServer.UDPServer((server_ip, server_p), EchoHandler)
     serv.serve_forever()
