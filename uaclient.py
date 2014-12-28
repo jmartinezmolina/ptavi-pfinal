@@ -183,7 +183,7 @@ if __name__ == "__main__":
                 if data_serv[4] == 'SIP/2.0 200 OK':
                     line_send = "ACK sip:" + OPCION + " SIP/2.0\r\n"
                     prox_ip = xml["regproxy_ip"]
-                    prox_puerto = xml["regproxy_puerto"]
+                    prox_puerto = int(xml["regproxy_puerto"])
                     log_send(prox_ip, prox_puerto, line_send)
                     my_socket.send(line_send + '\r\n')
                     # ENVIO RTP tras el ACK
