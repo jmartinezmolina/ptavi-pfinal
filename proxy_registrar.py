@@ -51,14 +51,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             rec_ip = self.client_address[0]
             rec_puerto = self.client_address[1] 
 
-            # log
-                    # ---> volvemos a abrir el log?
-            log = open(xml["log_path"], 'a')
-            rec_from = 'Received from ' +  rec_ip + ":" + str(rec_puerto)
-            print "\n" + rec_from
-            line_log = rec_from + ": " + line.replace('\r\n', ' ') + '\r\n'
-            log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
-            print "\nRecibido -- " + line
+            self.log_rec(rec_ip, rec_puerto, line)
 
                         # ---> El proxy debe ver si está bien el método y petición o reenvía lo que llegue?
             # Ver si el método llegado es correcto
@@ -66,14 +59,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             metodos_SIP = ("REGISTER", "INVITE", "BYE", "ACK")
 
             if not metodo in metodos_SIP:
-                # log
-                send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
-                print "\n" + send_to
                 line_send = 'SIP/2.0 405 Method Not Allowed\r\n'
-                line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-                log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                self.log_send(rec_ip, rec_puerto, line_send)
                 self.wfile.write(line_send + "\r\n")
-                print '\nEnviando: ' + line_send
             
             else:
                 # Si el método es REGISTER
@@ -86,14 +74,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         puerto = int(line.split()[1].split(":")[2])
                         expires = int(line.split()[4])
                     except ValueError:
-                        # log
-                        send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
-                        print "\n" + send_to
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                        self.log_send(rec_ip, rec_puerto, line_send)
                         self.wfile.write(line_send + "\r\n")
-                        print '\nEnviando: ' + line_send
                     sip_v = line.split()[2]
 
                     if protocolo == "sip" and "@" in user and sip_v == "SIP/2.0":
@@ -119,25 +102,15 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                 if diccionario:
                                     print "diccionario: " + str(diccionario) + "\r"
                         self.register2file()
-                        # log
-                        send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
-                        print "\n" + send_to
                         line_send = 'SIP/2.0 200 OK\r\n'
-                        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                        self.log_send(rec_ip, rec_puerto, line_send)
                         self.wfile.write(line_send + "\r\n")
-                        print '\nEnviando: ' + line_send
                     
                     # Si la petición no está bien formada
                     else: 
-                        # log
-                        send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
-                        print "\n" + send_to
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                        self.log_send(rec_ip, rec_puerto, line_send)
                         self.wfile.write(line_send + "\r\n")
-                        print '\nEnviando: ' + line_send
 
                 # Si el método es INVITE, ACK o BYE
                 elif metodo == "INVITE" or "ACK" or "BYE":
@@ -161,14 +134,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                             my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                             my_socket.connect((diccionario[name][0], diccionario[name][1]))
-                            # log
-                            send_to = "Sent to " + diccionario[name][0] + ":" + str(diccionario[name][1])
-                            print "\n" + send_to
-                            line_log = send_to + ": " + line.replace('\r\n', ' ') + '\r\n'
-                            log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                            self.log_send(diccionario[name][0], diccionario[name][1], line)
                                                    # ---> se envia bien el barra n no?
                             my_socket.send(line + '\r\n')
-                            print "\nEnviando: " + line
 
                             # Si el método es INVITE o BYE además espero recibir
                             if not metodo == "ACK":
@@ -184,42 +152,22 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                     log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
                                     raise SystemExit
                                 # Recibo respuesta 
-                                # log
-                                rec_from = "Received from " + diccionario[name][0] + ":" + str(diccionario[name][1])
-                                print "\n" + rec_from
-                                line_log = rec_from + ": " + data.replace('\r\n', ' ') + '\r\n'
-                                log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
-                                print "\nRecibido -- " + data
+                                self.log_rec(diccionario[name][0], diccionario[name][1], data)
                                 # La reenvío al que solicitó el invite o bye
-                                # log
-                                send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
-                                print "\n" + send_to
-                                line_log = send_to + ": " + data.replace('\r\n', ' ') + '\r\n'
-                                log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                                self.log_send(rec_ip, rec_puerto, data)
                                 self.wfile.write(data + "\r\n")
-                                print '\nEnviando: ' + data
 
                         # Si no está registrado o sí lo estaba pero ha expirado
                         else:
-                            # log
-                            send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
-                            print "\n" + send_to
                             line_send = 'SIP/2.0 404 User Not Found\r\n'
-                            line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-                            log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                            self.log_send(rec_ip, rec_puerto, line_send)
                             self.wfile.write(line_send + "\r\n")
-                            print '\nEnviando: ' + line_send
 
                     # Si la petición no está bien formada
                     else: 
-                        # log
-                        send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
-                        print "\n" + send_to
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                        self.log_send(rec_ip, rec_puerto, line_send)
                         self.wfile.write(line_send + "\r\n")
-                        print '\nEnviando: ' + line_send
 
 
     """
@@ -258,7 +206,29 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             if name == user:
                 registrado = 1
                 print str(name) + " si está registrado...\r"
-        return registrado     
+        return registrado    
+ 
+    """
+    Guardar mensajes de depuración de envío en .log
+    """
+    def log_send(self, ip, puerto, line_send):
+        log = open(xml["log_path"], 'a')
+        send_to = "Sent to " + ip + ":" + str(puerto)
+        print "\n" + send_to
+        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log) 
+        print '\nEnviando: ' + line_send 
+
+    """
+    Guardar mensajes de depuración de recibo en .log
+    """
+    def log_rec(self, ip, puerto, line_rec):
+        log = open(xml["log_path"], 'a')
+        rec_from = 'Received from ' +  ip + ":" + str(puerto)
+        print "\n" + rec_from
+        line_log = rec_from + ": " + line_rec.replace('\r\n', ' ') + '\r\n'
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+        print "\nRecibido -- " + line_rec
 
 
 if __name__ == "__main__":
