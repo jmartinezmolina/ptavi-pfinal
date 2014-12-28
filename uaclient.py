@@ -13,6 +13,8 @@ from xml.sax.handler import ContentHandler
 """
 LEER EL FICHERO XML
 """
+
+
 class XMLHandler(ContentHandler):
 
     def __init__(self):
@@ -37,7 +39,6 @@ class XMLHandler(ContentHandler):
 
 
 if __name__ == "__main__":
-
     """
     ERRORES EN LA LÍNEA DE COMANDOS
     """
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     METODO = sys.argv[2].upper()
     OPCION = sys.argv[3]
 
-    # Errores en los valores: CONFIG, METODO 
+    # Errores en los valores: CONFIG, METODO
     try:
         CONFIG.split(".")[1]
     except IndexError:
@@ -64,7 +65,7 @@ if __name__ == "__main__":
 
     metodos_SIP = ("REGISTER", "INVITE", "BYE")
 
-    if not METODO in metodos_SIP:
+    if METODO not in metodos_SIP:
         print "Usage: python uaclient.py config method option"
         raise SystemExit
 
@@ -82,11 +83,10 @@ if __name__ == "__main__":
         except IndexError:
             print "Usage: python uaclient.py config method option"
             raise SystemExit
-      
+
         if OPCION.split("@")[1] == "":
             print "Usage: python uaclient.py config method option"
             raise SystemExit
-
 
     """
     Guardar mensajes de depuración de envío en .log
@@ -96,20 +96,19 @@ if __name__ == "__main__":
         send_to = "Sent to " + ip + ":" + str(puerto)
         print "\n" + send_to
         line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log) 
-        print '\nEnviando: ' + line_send 
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+        print '\nEnviando: ' + line_send
 
     """
     Guardar mensajes de depuración de recibo en .log
     """
     def log_rec(ip, puerto, line_rec):
         log = open(xml["log_path"], 'a')
-        rec_from = 'Received from ' +  ip + ":" + str(puerto)
+        rec_from = 'Received from ' + ip + ":" + str(puerto)
         print "\n" + rec_from
         line_log = rec_from + ": " + line_rec.replace('\r\n', ' ') + '\r\n'
         log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
         print "\nRecibido -- " + line_rec
-
 
     """
     PARSER CON LOS VALORES DE XML
@@ -140,15 +139,18 @@ if __name__ == "__main__":
         line_send += " SIP/2.0\r\n"
         line_send += "Expires: " + str(OPCION) + "\r\n"
         log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
+
     if METODO == "INVITE":
         line_send += OPCION + " SIP/2.0\r\n"
                         # ---> bien espacios ahí?
         line_send += "Content-Type: application/sdp\r\n\r\n"
-        line_send += "v=0\r\n" 
-        line_send += "o=" + xml["account_username"] + " " + xml["uaserver_ip"] + "\r\n" 
-        line_send += "s=sesion_uac\r\n" + "t=0\r\n" 
+        line_send += "v=0\r\n"
+        line_send += "o=" + xml["account_username"] + " "
+        line_send += xml["uaserver_ip"] + "\r\n"
+        line_send += "s=sesion_uac\r\n" + "t=0\r\n"
         line_send += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
         log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
+
     if METODO == "BYE":
         line_send += OPCION + " SIP/2.0\r\n"
         log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
@@ -180,9 +182,10 @@ if __name__ == "__main__":
             if data_serv[2] == 'SIP/2.0 180 Ringing':
                 if data_serv[4] == 'SIP/2.0 200 OK':
                     line_send = "ACK sip:" + OPCION + " SIP/2.0\r\n"
-                    log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
+                    prox_ip = xml["regproxy_ip"]
+                    prox_puerto = xml["regproxy_puerto"]
+                    log_send(prox_ip, prox_puerto, line_send)
                     my_socket.send(line_send + '\r\n')
-
                     # ENVIO RTP tras el ACK
                                     # ---> esto es así??
                     ip_rtp = data_serv[8].split(' ')[1]
@@ -195,8 +198,7 @@ if __name__ == "__main__":
                     os.system(run)
                     line_send = "RTP audio\r\n"
                     log_send(ip_rtp, puerto_rtp, line_send)
-                    print "\r\nEl fichero de audio ha finalizado\r\n\r\n"   
-
+                    print "\r\nEl fichero de audio ha finalizado\r\n\r\n"
         # ---> da igual que nos llegue o no un 200 ok del register o el bye no?
 
     # Cerramos el socket
