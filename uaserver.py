@@ -28,18 +28,31 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             line = self.rfile.read()
             if not line:
                 break
-            print "El cliente nos manda " + line
 
-            cliente_ip = self.client_address[0]
-            cliente_puerto = self.client_address[1] 
+            rec_ip = self.client_address[0]
+            rec_puerto = self.client_address[1] 
+
+            # log
+            log = open(xml["log_path"], 'a')
+            rec_from = 'Received from ' + rec_ip + ":" + str(rec_puerto)
+            print "\n" + rec_from
+            line_log = rec_from + ": " + line.replace('\r\n', ' ') + '\r\n'
+            log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+            print "\nRecibido -- " + line
             
             # Ver si el método llegado es correcto
             metodo = line.split()[0]
             metodos_SIP = ("INVITE", "BYE", "ACK")
 
             if not metodo in metodos_SIP:
-                self.wfile.write('SIP/2.0 405 Method Not Allowed\r\n\r\n')
-                print 'Enviando: SIP/2.0 405 Method Not Allowed\r\n\r\n'
+                # log
+                send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
+                print "\n" + send_to
+                line_send = 'SIP/2.0 405 Method Not Allowed\r\n'
+                line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+                log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                self.wfile.write(line_send + "\r\n")
+                print '\nEnviando: ' + line_send
             
             else:
                 # Ver si la petición está bien formada
@@ -54,7 +67,6 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         # Creamos el SDP a mandar con el "200 OK"
                         SDP_uas = "Content-Type: application/sdp\r\n\r\n"
                         SDP_uas += "v=0\r\n" 
-                                # ---> que ip? la de proxy o la de server?
                         SDP_uas += "o=" + xml["account_username"] + " " + xml["uaserver_ip"] + "\r\n" 
                         SDP_uas += "s=sesion_uas\r\n" + "t=0\r\n" 
                         SDP_uas += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
@@ -62,7 +74,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         # Llega SDP del cliente, obtenemos los valores deseados
                         SDP_uac = line.split()[3:]
 
-                       # for cab in SDP_uac:
+                        # for cab in SDP_uac:
                         #    if cab.split("=")[0] == "o":
                         #        uac_o_server_ip = cab.split("=")[1]
                         #    elif cab.split("=")[0] == "m":
@@ -71,37 +83,69 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                 #---> puedo dar por hecho eso? q lo mande como diccionario? for?
                         Lista_SDP_uac = [SDP_uac[-6], SDP_uac[-2]]
                         Dicc_SDP_uac['key'] = Lista_SDP_uac
-    
-                                # ---> bien dos barra n no?
-                        self.wfile.write('SIP/2.0 100 Trying\r\n\r\n')
-                        print 'Enviando: ' + 'SIP/2.0 100 Trying\r\n\r\n'
-                        self.wfile.write('SIP/2.0 180 Ringing\r\n\r\n')
-                        print 'Enviando: ' + 'SIP/2.0 180 Ringing\r\n\r\n'
-                        LINE = "SIP/2.0 200 OK\r\n" + SDP_uas + "\r\n\r\n"
-                        self.wfile.write(LINE)
-                        print 'Enviando: ' + LINE
+
+                        # log
+                        send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
+                        print "\n" + send_to
+                        line_send = 'SIP/2.0 100 Trying\r\n'
+                        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                                                   # ---> bien dos barra n no?
+                        self.wfile.write(line_send + "\r\n")
+                        print '\nEnviando: ' + line_send
+                        # log
+                        send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
+                        print "\n" + send_to
+                        line_send = 'SIP/2.0 180 Ringing\r\n'
+                        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                        self.wfile.write(line_send + "\r\n")
+                        print '\nEnviando: ' + line_send
+                        # log
+                        send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
+                        print "\n" + send_to
+                        line_send = 'SIP/2.0 200 OK\r\n' + SDP_uas + "\r\n"
+                        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                        self.wfile.write(line_send + "\r\n")
+                        print '\nEnviando: ' + line_send
 
                     elif metodo == 'ACK':
+                        # ENVIO RTP
                         ip = Dicc_SDP_uac['key'][0]
                         puerto = str(Dicc_SDP_uac['key'][1])
                         # run: lo que se ha de ejecutar en la shell
-                                    #---> ip del proxy o del q le llega la petición?
-                                    #---> ip_clt = str(self.client_address[0])
                         run = './mp32rtp -i ' + ip + " -p " + puerto 
                         run += " < " + xml["audio_path"]
                         print "Vamos a ejecutar", run
                         os.system(run)
-                        print "\r\nEl fichero de audio ha finalizado\r\n\r\n"
+                        # log
+                        line_send = "Sent to " + ip + ':' + str(puerto)
+                        print line_send
+                        line_log = line_send + ": " + "RTP audio\r\n"
+                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                        print "\r\nEl fichero de audio ha finalizado\r\n\r\n" 
 
                     elif metodo == 'BYE':
                                     #---> SDP también en el BYE?
-                        LINE = "SIP/2.0 200 OK\r\n\r\n"
-                        self.wfile.write(LINE)
-                        print 'Enviando: ' + LINE
+                        # log
+                        send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
+                        print "\n" + send_to
+                        line_send = 'SIP/2.0 200 OK\r\n'
+                        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+                        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                        self.wfile.write(line_send + "\r\n")
+                        print '\nEnviando: ' + line_send
                 
                 else:
-                    self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
-                    print 'Enviando: SIP/2.0 400 Bad Request\r\n\r\n'
+                    # log
+                    send_to = "Sent to " + rec_ip + ":" + str(rec_puerto)
+                    print "\n" + send_to
+                    line_send = 'SIP/2.0 400 Bad Request\r\n'
+                    line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
+                    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+                    self.wfile.write(line_send + "\r\n")
+                    print '\nEnviando: ' + line_send
 
 
 if __name__ == "__main__":
@@ -145,14 +189,15 @@ if __name__ == "__main__":
     """
     """
     Dicc_SDP_uac = {}
-    print "imprimimos diccionariooooo"
-    print Dicc_SDP_uac
 
     """
     SOCKET
     """
+    # log
+    log = open(xml["log_path"], 'a')
+    print '\nListening...'
+    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Listening...\r\n')
+    log.close()
     # Creamos servidor de eco y escuchamos
-            # ---> q puerto ponemos? no es donde escucha tb el cliente q lo pasa en el register?
-    serv = SocketServer.UDPServer(("", int(xml["uaserver_puerto"])), EchoHandler)
-    print "\nListening...\r\n"
+    serv = SocketServer.UDPServer((xml["uaserver_ip"], int(xml["uaserver_puerto"])), EchoHandler)
     serv.serve_forever()
