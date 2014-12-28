@@ -169,6 +169,7 @@ if __name__ == "__main__":
         line_log += " port " + str(xml["regproxy_puerto"]) + "\r\n"
         print line_log
         # log
+        log = open(xml["log_path"], 'a')
         log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
         raise SystemExit
 
@@ -203,6 +204,7 @@ if __name__ == "__main__":
 
     # Cerramos el socket
     # log
+    log = open(xml["log_path"], 'a')
     line_log = "Finishing.\r\n"
     log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
     my_socket.close()
