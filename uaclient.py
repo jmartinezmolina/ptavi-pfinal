@@ -90,9 +90,9 @@ if __name__ == "__main__":
     PASSWD = chandler.dic_etiq['account_passwd']
     UASERVER_IP = chandler.dic_etiq['uaserver_ip']
     UASERVER_PORT = int(chandler.dic_etiq['uaserver_puerto'])
-    RTPAUDIO_PORT = chandler.dic_etiq['rtpaudio_puerto']
+    RTPAUDIO_PORT = int(chandler.dic_etiq['rtpaudio_puerto'])
     REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
-    REGPROXY_PORT = chandler.dic_etiq['regproxy_puerto']
+    REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
     LOG_PATH = chandler.dic_etiq['log_path']
     AUDIO_PATH = chandler.dic_etiq['audio_path']
     
@@ -106,28 +106,26 @@ if __name__ == "__main__":
             print 'Usage: python uaclient.py config REGISTER -time-expires-'
             raise SystemExit
             
-        LINE = METODO + " sip:" + USERNAME + "@" + UASERVER_IP + ":"
+        LINE = METODO + " sip:" + USERNAME + ":"
         LINE += str(UASERVER_PORT) + " SIP/2.0" + "\r\n\r\n"
         LINE = LINE + "Expires: " + OPCION + "\r\n\r\n"       
 
     if METODO == "INVITE":
         # Contenido que vamos a enviar
-        LINE = METODO + " sip:" + USERNAME + "@"
-        LINE += UASERVER_IP + " SIP/2.0\r\n\r\n"
+        LINE = METODO + " sip:" + OPCION + " SIP/2.0\r\n"
         LINE += "Content-Type: application/sdp\r\n\r\n"
-        LINE += "v=0\r\n" + "o=" + USERNAME + " " + UASERVER_IP
-        LINE += "\r\ns=misesion\r\n" + "t=0\r\n" + "m=audio "
+        LINE += "v=0\r\n" + "o=" + USERNAME + " 127.0.0.1\r\n"
+        LINE += "s=misesion\r\n" + "t=0\r\n" + "m=audio "
         LINE += RTPAUDIO_PORT + " RTP"
     
     if METODO == "BYE":
-        LINE = METODO + " sip:" + USERNAME + "@"
-        LINE += UASERVER_IP + " SIP/2.0\r\n\r\n"
+        LINE = METODO + " sip:" + OPCION + UASERVER_IP + " SIP/2.0\r\n\r\n"
         
    
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    my_socket.connect((UASERVER_IP, UASERVER_PORT))
+    my_socket.connect((REGPROXY_IP, REGPROXY_PORT))
 
     try:
         #Envio del mensaje
@@ -147,7 +145,7 @@ if __name__ == "__main__":
         if data.split("\r\n\r\n")[0] == "SIP/2.0 100 Trying":
             if data.split("\r\n\r\n")[1] == "SIP/2.0 180 Ringing":
                 if data.split("\r\n\r\n")[2] == "SIP/2.0 200 OK":
-                    ack = "ACK sip:" + USERNAME + "@" + UASERVER_IP
+                    ack = "ACK sip:" + OPCION + "@" + REGPROXY_IP
                     ack += " SIP/2.0\r\n\r\n"
                     my_socket.send(ack + "\r\n")
 
