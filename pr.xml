@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <config>
-    <server name = "" ip = "" puerto = ""></server>
-    <database path = "" passwdpath = ""></database>
-    <log path = ""/></log>
+    <server name = "VierServer" ip = "127.0.0.1" puerto = "5555"></server>
+    <database path = "registered.txt" passwdpath = "option"></database>
+    <log path = "log_proxy.txt"></log>
 </config>
