@@ -4,29 +4,16 @@
 """
 Clase (y programa principal) para un servidor SIP en UDP simple
 """
-
+from xml.sax import make_parser
+from xml.sax.handler import ContentHandler
 import SocketServer
 import sys
 import os
+import uaclient
 
 list_metodo = ['INVITE', 'BYE', 'ACK']
 P_MP3 = str(23032)
-MP3 = sys.argv[3]
-
-#Comprobación de posibles excepciones
-if not os.path.exists(MP3):
-    print 'Usage: python server.py IP port audio_file'
-    raise SystemExit
-
-if len(sys.argv) != 4:
-    print 'Usage: python server.py IP port audio_file'
-    raise SystemExit
-
-try:
-    PORT = int(sys.argv[2])
-except ValueError:
-    print 'Usage: python server.py IP port audio_file'
-    raise SystemExit
+#MP3 = sys.argv[3]
 
 
 class SipHandler(SocketServer.DatagramRequestHandler):
@@ -71,6 +58,42 @@ class SipHandler(SocketServer.DatagramRequestHandler):
 
 if __name__ == "__main__":
     # Creamos servidor SIP y escuchamos
-    serv = SocketServer.UDPServer(("", PORT), SipHandler)
+    
+    #Comprobación de posibles excepciones
+    if len(sys.argv) != 2:
+        print 'Usage: python server.py IP port audio_file'
+        raise SystemExit
+    
+    FICHERO = str(sys.argv[1])
+    
+    parser = make_parser()
+    chandler = uaclient.XMLHandler()
+    parser.setContentHandler(chandler)
+    parser.parse(open(FICHERO))
+    
+    USERNAME = chandler.dic_etiq['account_username']
+    PASSWD = chandler.dic_etiq['account_passwd']
+    UASERVER_IP = chandler.dic_etiq['uaserver_ip']
+    RTPAUDIO_PORT = int(chandler.dic_etiq['rtpaudio_puerto'])
+    REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
+    REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
+    LOG_PATH = chandler.dic_etiq['log_path']
+    AUDIO_PATH = chandler.dic_etiq['audio_path']
+    
+    
+    
+    
+    
+    if not os.path.exists(AUDIO_PATH):
+        print 'Usage: python server.py IP port audio_file'
+        raise SystemExit
+
+    try:
+        UASERVER_PORT = int(chandler.dic_etiq['uaserver_puerto'])
+    except ValueError:
+        print 'Usage: python server.py IP port audio_file'
+        raise SystemExit
+    
+    serv = SocketServer.UDPServer(("", UASERVER_PORT), SipHandler)
     print "listening...\r\n"
     serv.serve_forever()
