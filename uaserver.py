@@ -60,7 +60,12 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         SDP_uas += " RTP\r\n"
 
                         # Llega SDP del cliente, obtenemos los valores deseados
-                        SDP_uac = line.split()[3:]
+                        try:
+                            SDP_uac = line.split()[3:]
+                        except IndexError:
+                            line_send = 'SIP/2.0 400 Bad Request\r\n'
+                            self.log_send(rec_ip, rec_puerto, line_send)
+                            self.wfile.write(line_send + "\r\n")
 
                         # for cab in SDP_uac:
                         #    if cab.split("=")[0] == "o":
@@ -74,7 +79,6 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
 
                         line_send = 'SIP/2.0 100 Trying\r\n'
                         self.log_send(rec_ip, rec_puerto, line_send)
-                                    # ---> bien dos barra n no?
                         self.wfile.write(line_send + "\r\n")
                         line_send = 'SIP/2.0 180 Ringing\r\n'
                         self.log_send(rec_ip, rec_puerto, line_send)
@@ -84,6 +88,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         self.wfile.write(line_send + "\r\n")
 
                     elif metodo == 'ACK':
+                                # --> no funcionaaaaaaaaaaaa
                         # ENVIO RTP
                         ip = Dicc_SDP_uac['key'][0]
                         puerto = str(Dicc_SDP_uac['key'][1])
@@ -97,7 +102,6 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         print "\r\nEl fichero de audio ha finalizado\r\n\r\n"
 
                     elif metodo == 'BYE':
-                                    # ---> SDP también en el BYE?
                         line_send = 'SIP/2.0 200 OK\r\n'
                         self.log_send(rec_ip, rec_puerto, line_send)
                         self.wfile.write(line_send + "\r\n")
@@ -175,6 +179,7 @@ if __name__ == "__main__":
     """
     # log
     log = open(xml["log_path"], 'a')
+        # ---> escribimos listening o starting?
     print '\nListening...'
     log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Listening...\r\n')
     log.close()
