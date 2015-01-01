@@ -88,6 +88,7 @@ if __name__ == "__main__":
             print "Usage: python uaclient.py config method option"
             raise SystemExit
 
+                # ----> meterlo en una clase
     """
     Guardar mensajes de depuración de envío en .log
     """
@@ -129,7 +130,7 @@ if __name__ == "__main__":
     # log
     log = open(xml["log_path"], 'a')
     print '\nStarting...'
-    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Starting...\r\n')
+    #log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Starting...\r\n')
 
     # Contenido que vamos a enviar dependiendo del metodo
     line_send = METODO + " sip:"
@@ -142,7 +143,6 @@ if __name__ == "__main__":
 
     if METODO == "INVITE":
         line_send += OPCION + " SIP/2.0\r\n"
-                        # ---> bien espacios ahí?
         line_send += "Content-Type: application/sdp\r\n\r\n"
         line_send += "v=0\r\n"
         line_send += "o=" + xml["account_username"] + " "
@@ -182,12 +182,14 @@ if __name__ == "__main__":
         if data_serv[0] == 'SIP/2.0 100 Trying':
             if data_serv[2] == 'SIP/2.0 180 Ringing':
                 if data_serv[4] == 'SIP/2.0 200 OK':
+                    # Envio el ACK
                     line_send = "ACK sip:" + OPCION + " SIP/2.0\r\n"
                     prox_ip = xml["regproxy_ip"]
                     prox_puerto = int(xml["regproxy_puerto"])
                     log_send(prox_ip, prox_puerto, line_send)
                     my_socket.send(line_send + '\r\n')
-                    # ENVIO RTP tras el ACK
+
+                    # Envio RTP 
                                     # ---> esto es así??
                     ip_rtp = data_serv[8].split(' ')[1]
                     puerto_rtp = data_serv[11].split(' ')[1]
@@ -200,12 +202,11 @@ if __name__ == "__main__":
                     line_send = "RTP audio\r\n"
                     log_send(ip_rtp, puerto_rtp, line_send)
                     print "\r\nEl fichero de audio ha finalizado\r\n\r\n"
-        # ---> da igual que nos llegue o no un 200 ok del register o el bye no?
 
     # Cerramos el socket
     # log
     log = open(xml["log_path"], 'a')
-    line_log = "Finishing.\r\n"
-    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+    line_log = "Finishing.\r\n\r\n"
+    #log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
     my_socket.close()
     print line_log
