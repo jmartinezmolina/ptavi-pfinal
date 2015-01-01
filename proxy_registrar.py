@@ -55,7 +55,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             rec_ip = self.client_address[0]
             rec_puerto = self.client_address[1]
             self.log_rec(rec_ip, rec_puerto, line)
-                        # ---> El proxy debe ver si está bien el método y petición o reenvía lo que llegue?
+
             # Ver si el método llegado es correcto
             metodo = line.split()[0]
             metodos_SIP = ("REGISTER", "INVITE", "BYE", "ACK")
@@ -126,7 +126,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     sip_v = line.split()[2]
 
                     if protoc == "sip" and "@" in name and sip_v == "SIP/2.0":
-                                        # ---> ver eso tanto en invite como en ack y bye?
+
                         # Primero vemos si alguien ha expirado
                         self.ver_si_expire()
                         # Vemos si está registrado al que se quiere reenviar
@@ -137,6 +137,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         if registrado == 1:
                             ip_send = dicc[name][0]
                             p_send = int(dicc[name][1])
+                                            # ----> pep8 mal
                             my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                             my_socket.connect((ip_send, p_send))
@@ -284,6 +285,7 @@ if __name__ == "__main__":
     inicio = "Server " + server_n + " listening at port "
     inicio += str(server_p) + "...\r\n"
     print "\n" + inicio
+        # ---> escribimos starting?
     log.write(form_log + ' ' + inicio)
     log.close()
     # Creamos servidor de eco y escuchamos
