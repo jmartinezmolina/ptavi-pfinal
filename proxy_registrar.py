@@ -119,7 +119,17 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     #print self.client_address
                     print line
                 if list_palabras[0] == "INVITE":
-                    print 'hola'
+                    print ' inviteeeeeeeeeeeeeeeeeeeee'
+                    #print list_palabras
+                    recorte = list_palabras[1].split(":")
+                    mail = recorte[1]
+                    print mail
+                    if self.dic_reg:
+                        for user in self.dic_reg.keys():
+                            if user == mail:
+                                print user
+                                print mail
+                    #print recorte
                 else:
                     self.wfile.write("SIP/2.0 400 Bad Request\r\n\r\n")
             if not line:
