@@ -69,11 +69,13 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         y en sucesivas líneas los valores de cada user registrado.
         """
         fich = open(DATABASE_PATH, "w")
-        fich.write("User\t" + "IP\t" + "Expires\r\n")
+        fich.write("User\t" + "IP\t" + "Port\t" + "Registro\t" + "Expires\r\n")
         for mail in self.dic_reg:
-            segundos = self.dic_reg[mail][1]
-            t = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(segundos))
-            fich.write(mail + "\t" + self.dic_reg[mail][0] + "\t" + t + "\r\n")
+            expires = str(self.dic_reg[mail][1])
+            t = str(time.time())
+            datos = mail + "\t" + self.dic_reg[mail][0] + "\t"
+            datos += self.dic_reg[mail][2] + "\t" + t + "\t" + expires  + "\r\n"
+            fich.write(datos)
         fich.close()
 
     def handle(self):
@@ -87,6 +89,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             line = self.rfile.read()
             if line != "":
                 list_palabras = line.split()
+                print list_palabras
                 if list_palabras[0] == "REGISTER":
                     #Compruebo mi dic para localizar posibles users EXPIRES
                     if self.dic_reg:
@@ -98,17 +101,25 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     #añado al user a la lista
                     time_expired = time.time() + float(list_palabras[4])
                     recorte = list_palabras[1].split(":")
+                    print recorte
                     mail = recorte[1]
+                    port = recorte[2]
                     self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
-                    list_atributos = [self.client_address[0], time_expired]
-                    self.dic_reg[mail] = list_atributos
+                    list_atrib = [self.client_address[0], time_expired, port]
+                    print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+                    print list_atrib
+                    print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+                    self.dic_reg[mail] = list_atrib
                     self.register2file(DATABASE_PATH)
+                    print self.dic_reg
                     #compruebo si el campos EXPIRES es 0
                     if int(list_palabras[4]) == 0:
                         del self.dic_reg[mail]
                         self.register2file()
-                    print self.client_address
+                    #print self.client_address
                     print line
+                if list_palabras[0] == "INVITE":
+                    print 'hola'
                 else:
                     self.wfile.write("SIP/2.0 400 Bad Request\r\n\r\n")
             if not line:
@@ -118,6 +129,11 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 if __name__ == "__main__":
 
 
+    #Comprobación de posibles excepciones
+    if len(sys.argv) != 2:
+        print 'Usage: python proxy_registrar.py config'
+        raise SystemExit
+    
     FICHERO = str(sys.argv[1])
     
     parser = make_parser()
