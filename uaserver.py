@@ -20,6 +20,9 @@ class SipHandler(SocketServer.DatagramRequestHandler):
     """
     Sip server class
     """
+    list_palabras = []
+    dic_info = {}
+    
     def handle(self):
 
         while 1:
@@ -38,11 +41,20 @@ class SipHandler(SocketServer.DatagramRequestHandler):
                     print line
                     #Comprobacion del metodo del mensaje recibido
                     if metodo == "INVITE":
+                        self.list_palabras = line.split("\r\n")
+                        print self.list_palabras
+                        for linea in self.list_palabras:
+                            key_value = linea.split('=')
+                            print key_value
+                            if len(key_value) == 2:
+                                self.dic_info[key_value[0]] = key_value[1]
+                        print self.dic_info
                         msg = "SIP/2.0 100 Trying\r\n\r\n"
                         msg += "SIP/2.0 180 Ringing\r\n\r\n"
                         msg += "SIP/2.0 200 OK\r\n\r\n"
                         self.wfile.write(msg)
                     elif metodo == "ACK":
+                        print 'recibido ackkkkkkkkkkkkkkkkkkkk'
                         os.system('chmod 755 mp32rtp')
                         run = './mp32rtp -i ' + ip_client + ' -p '
                         #run += RTPAUDIO_PORT + ' < ' + AUDIO_PATH
