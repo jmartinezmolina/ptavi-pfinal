@@ -64,7 +64,6 @@ class XMLHandler(ContentHandler):
 
 if __name__ == "__main__":
 
-
     list_metodo = ['INVITE', 'REGISTER', 'BYE']
 
     #Comprobación de posibles excepciones
@@ -79,7 +78,6 @@ if __name__ == "__main__":
     METODO = str(sys.argv[2]).upper()
     FICHERO = str(sys.argv[1])
     OPCION = str(sys.argv[3])
-
     
     parser = make_parser()
     chandler = XMLHandler()
@@ -87,17 +85,12 @@ if __name__ == "__main__":
     parser.parse(open(FICHERO))
     
     USERNAME = chandler.dic_etiq['account_username']
-    PASSWD = chandler.dic_etiq['account_passwd']
     UASERVER_IP = chandler.dic_etiq['uaserver_ip']
     UASERVER_PORT = int(chandler.dic_etiq['uaserver_puerto'])
     RTPAUDIO_PORT = int(chandler.dic_etiq['rtpaudio_puerto'])
     REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
     REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
     LOG_PATH = chandler.dic_etiq['log_path']
-    AUDIO_PATH = chandler.dic_etiq['audio_path']
-    
-    #print chandler.dic_etiq
-
 
     if METODO == "REGISTER":
         try:
@@ -114,14 +107,14 @@ if __name__ == "__main__":
         # Contenido que vamos a enviar
         LINE = METODO + " sip:" + OPCION + " SIP/2.0\r\n"
         LINE += "Content-Type: application/sdp\r\n\r\n"
-        LINE += "v=0\r\n" + "o=" + USERNAME + " 127.0.0.1\r\n"
+        LINE += "v=0\r\n" + "o=" + USERNAME + " " + UASERVER_IP + "\r\n"
         LINE += "s=misesion\r\n" + "t=0\r\n" + "m=audio "
         LINE += str(RTPAUDIO_PORT) + " RTP"
     
     if METODO == "BYE":
         LINE = METODO + " sip:" + OPCION + " SIP/2.0\r\n\r\n"
-        
-   
+
+
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -139,8 +132,7 @@ if __name__ == "__main__":
         raise SystemExit
 
     print 'Recibido -- \r\n\r\n', data
-
-        
+    
     if METODO == "INVITE":
         if data.split("\r\n\r\n")[0] == "SIP/2.0 100 Trying":
             if data.split("\r\n\r\n")[1] == "SIP/2.0 180 Ringing":

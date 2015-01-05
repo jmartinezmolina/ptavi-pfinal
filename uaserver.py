@@ -12,8 +12,6 @@ import os
 import uaclient
 
 list_metodo = ['INVITE', 'BYE', 'ACK']
-P_MP3 = str(23032)
-#MP3 = sys.argv[3]
 
 
 class SipHandler(SocketServer.DatagramRequestHandler):
@@ -28,6 +26,7 @@ class SipHandler(SocketServer.DatagramRequestHandler):
         while 1:
             # Leyendo línea a línea lo que nos envía el cliente
             line = self.rfile.read()
+            print line
             if not line:
                 break
             else:
@@ -37,28 +36,23 @@ class SipHandler(SocketServer.DatagramRequestHandler):
                 #Comprobacion de estructura del mensaje recibido
                 if control >= 0 and control2 >= 0 and control3 >= 0:
                     metodo = line.split(" ")[0]
-                    #ip_client = str(self.client_address[0])
-                    print line
                     #Comprobacion del metodo del mensaje recibido
                     if metodo == "INVITE":
+                    
                         self.list_palabras = line.split("\r\n")
-                        print self.list_palabras
                         for linea in self.list_palabras:
                             key_value = linea.split('=')
-                            print key_value
                             if len(key_value) == 2:
                                 self.dic_info[key_value[0]] = key_value[1]
-                        print self.dic_info
                         msg = "SIP/2.0 100 Trying\r\n\r\n"
                         msg += "SIP/2.0 180 Ringing\r\n\r\n"
                         msg += "SIP/2.0 200 OK\r\n\r\n"
                         self.wfile.write(msg)
+                        
                     elif metodo == "ACK":
-                        print 'recibido ackkkkkkkkkkkkkkkkkkkk'
+
                         ip_client = self.dic_info['o'].split(' ')
                         port_rtp = self.dic_info['m'].split(' ')
-                        print ip_client[1]
-                        print port_rtp[1]
                         os.system('chmod 755 mp32rtp')
                         run = './mp32rtp -i ' + ip_client[1] + ' -p '
                         run += port_rtp[1] + ' < ' + AUDIO_PATH
@@ -73,7 +67,6 @@ class SipHandler(SocketServer.DatagramRequestHandler):
             break
 
 if __name__ == "__main__":
-    # Creamos servidor SIP y escuchamos
     
     #Comprobación de posibles excepciones
     if len(sys.argv) != 2:
@@ -88,11 +81,6 @@ if __name__ == "__main__":
     parser.parse(open(FICHERO))
     
     USERNAME = chandler.dic_etiq['account_username']
-    PASSWD = chandler.dic_etiq['account_passwd']
-    UASERVER_IP = chandler.dic_etiq['uaserver_ip']
-    RTPAUDIO_PORT = int(chandler.dic_etiq['rtpaudio_puerto'])
-    REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
-    REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
     LOG_PATH = chandler.dic_etiq['log_path']
     AUDIO_PATH = chandler.dic_etiq['audio_path']
 
