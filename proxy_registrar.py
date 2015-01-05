@@ -12,6 +12,8 @@ import uaclient
 import socket
 
 
+LIST_METODO = ['REGISTER', 'INVITE', 'BYE', 'ACK']
+
 class XMLHandler(ContentHandler):
     
 
@@ -26,6 +28,7 @@ class XMLHandler(ContentHandler):
         self.dic_etiq = {'server_name': '', 'server_ip': '',
             'server_puerto': '', 'database_path': '', 
             'database_passwdpath': '', 'log_path': ''}
+            
 
 
     def startElement(self, name, attrs):
@@ -88,74 +91,120 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         while 1:
             # Leyendo línea a línea lo que nos envía el cliente
             line = self.rfile.read()
-            if line != "":
-                list_palabras = line.split()
-                print list_palabras
-                if list_palabras[0] == "REGISTER":
-                    #Compruebo mi dic para localizar posibles users EXPIRES
-                    if self.dic_reg:
-                        tiempo_actual = time.time()
-                        for user in self.dic_reg.keys():
-                            if self.dic_reg[user][1] <= tiempo_actual:
-                                del self.dic_reg[user]
-                        self.register2file(DATABASE_PATH)
-                    #añado al user a la lista
-                    time_expired = time.time() + float(list_palabras[4])
-                    recorte = list_palabras[1].split(":")
-                    print recorte
-                    mail = recorte[1]
-                    port = recorte[2]
-                    self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
-                    list_atrib = [self.client_address[0], time_expired, port]
-                    print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-                    print list_atrib
-                    print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-                    self.dic_reg[mail] = list_atrib
-                    self.register2file(DATABASE_PATH)
-                    print self.dic_reg
-                    #compruebo si el campos EXPIRES es 0
-                    if int(list_palabras[4]) == 0:
-                        del self.dic_reg[mail]
-                        self.register2file()
-                    #print self.client_address
-                    print line
-                if list_palabras[0] == "INVITE":
-                    print ' inviteeeeeeeeeeeeeeeeeeeee'
-                    #print list_palabras
-                    recorte = list_palabras[1].split(":")
-                    mail = recorte[1]
-                    print mail
-                    if self.dic_reg:
-                        for user in self.dic_reg.keys():
-                            if user == mail:
-                                ip_user = self.dic_reg[mail][0]
-                                port_user = int(self.dic_reg[mail][2])
-                                print 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii'
-                                print ip_user
-                                print port_user
-                                print 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
-                                # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
-                                my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                                my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                                my_socket.connect((ip_user, port_user))
-                                try:
-                                    #Envio del mensaje
-                                    my_socket.send(line + '\r\n')
-                                    print "Enviando: " + line
-                                    #Recibimos el mensaje
-                                    data = my_socket.recv(1024)
-                                except socket.error:
-                                    port = str(UASERVER_PORT)
-                                    print 'Error: No server listening at ' + UASERVER_IP + ' port ' + port
-                                    raise SystemExit
-                                self.wfile.write(data)
-                                print 'Recibido -- \r\n\r\n', data
-                    #print recorte
-                else:
-                    self.wfile.write("SIP/2.0 400 Bad Request\r\n\r\n")
+            print 'lineeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+            print line
+            print 'lineeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
             if not line:
                 break
-
+            else:
+                control = line.find('sip:')
+                control2 = line.find('@')
+                control3 = line.find('SIP/2.0')
+                #Comprobacion de estructura del mensaje recibido
+                if control >= 0 and control2 >= 0 and control3 >= 0:
+                    list_palabras = line.split()
+                    print list_palabras
+                    if list_palabras[0] == "REGISTER":
+                        #Compruebo mi dic para localizar posibles users EXPIRES
+                        if self.dic_reg:
+                            tiempo_actual = time.time()
+                            for user in self.dic_reg.keys():
+                                if self.dic_reg[user][1] <= tiempo_actual:
+                                    del self.dic_reg[user]
+                            self.register2file(DATABASE_PATH)
+                        #añado al user a la lista
+                        time_expired = time.time() + float(list_palabras[4])
+                        recorte = list_palabras[1].split(":")
+                        print recorte
+                        mail = recorte[1]
+                        port = recorte[2]
+                        self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
+                        list_atrib = [self.client_address[0], time_expired, port]
+                        print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+                        print list_atrib
+                        print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+                        self.dic_reg[mail] = list_atrib
+                        self.register2file(DATABASE_PATH)
+                        print self.dic_reg
+                        #compruebo si el campos EXPIRES es 0
+                        if int(list_palabras[4]) == 0:
+                            del self.dic_reg[mail]
+                            self.register2file()
+                        #print self.client_address
+                        print line
+                    if list_palabras[0] == "INVITE":
+                        print ' inviteeeeeeeeeeeeeeeeeeeee'
+                        #print list_palabras
+                        recorte = list_palabras[1].split(":")
+                        mail = recorte[1]
+                        print mail
+                        if self.dic_reg:
+                            for user in self.dic_reg.keys():
+                                if user == mail:
+                                    ip_user = self.dic_reg[mail][0]
+                                    port_user = int(self.dic_reg[mail][2])
+                                    print 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii'
+                                    print ip_user
+                                    print port_user
+                                    print 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+                                    # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
+                                    my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                                    my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                                    my_socket.connect((ip_user, port_user))
+                                    try:
+                                        #Envio del mensaje
+                                        my_socket.send(line + '\r\n')
+                                        print "Enviando: " + line
+                                        #Recibimos el mensaje
+                                        data = my_socket.recv(1024)
+                                    except socket.error:
+                                        port = str(UASERVER_PORT)
+                                        print 'Error: No server listening at ' + UASERVER_IP + ' port ' + port
+                                        raise SystemExit
+                                    self.wfile.write(data)
+                                    print 'Recibido -- \r\n\r\n', data
+                                else:
+                                    self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
+                        #print recorte
+                    if list_palabras[0] == "ACK":
+                        print "ackkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+                        print list_palabras
+                        #print list_palabras
+                        recorte = list_palabras[1].split(":")
+                        mail = recorte[1]
+                        print mail
+                        if self.dic_reg:
+                            for user in self.dic_reg.keys():
+                                if user == mail:
+                                    ip_user = self.dic_reg[mail][0]
+                                    port_user = int(self.dic_reg[mail][2])
+                                    print 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii'
+                                    print ip_user
+                                    print port_user
+                                    print 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+                                    # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
+                                    my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                                    my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                                    my_socket.connect((ip_user, port_user))
+                                    try:
+                                        #Envio del mensaje
+                                        my_socket.send(line + '\r\n')
+                                        print "Enviando: " + line
+                                        #Recibimos el mensaje
+                                        data = my_socket.recv(1024)
+                                    except socket.error:
+                                        port = str(UASERVER_PORT)
+                                        print 'Error: No server listening at ' + UASERVER_IP + ' port ' + port
+                                        raise SystemExit
+                                    self.wfile.write(data)
+                                    print 'Recibido -- \r\n\r\n', data
+                        #print recorte
+                    if list_palabras[0] not in LIST_METODO:
+                        excepcion = "SIP/2.0 405 Method Not Allowed\r\n\r\n"
+                        self.wfile.write(excepcion)
+                else:
+                    self.wfile.write("SIP/2.0 400 Bad Request\r\n\r\n")
+            break
 
 if __name__ == "__main__":
 

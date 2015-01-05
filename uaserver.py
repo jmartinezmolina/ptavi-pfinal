@@ -37,7 +37,7 @@ class SipHandler(SocketServer.DatagramRequestHandler):
                 #Comprobacion de estructura del mensaje recibido
                 if control >= 0 and control2 >= 0 and control3 >= 0:
                     metodo = line.split(" ")[0]
-                    ip_client = str(self.client_address[0])
+                    #ip_client = str(self.client_address[0])
                     print line
                     #Comprobacion del metodo del mensaje recibido
                     if metodo == "INVITE":
@@ -55,9 +55,13 @@ class SipHandler(SocketServer.DatagramRequestHandler):
                         self.wfile.write(msg)
                     elif metodo == "ACK":
                         print 'recibido ackkkkkkkkkkkkkkkkkkkk'
+                        ip_client = self.dic_info['o'].split(' ')
+                        port_rtp = self.dic_info['m'].split(' ')
+                        print ip_client[1]
+                        print port_rtp[1]
                         os.system('chmod 755 mp32rtp')
-                        run = './mp32rtp -i ' + ip_client + ' -p '
-                        #run += RTPAUDIO_PORT + ' < ' + AUDIO_PATH
+                        run = './mp32rtp -i ' + ip_client[1] + ' -p '
+                        run += port_rtp[1] + ' < ' + AUDIO_PATH
                         os.system(run)
                     elif metodo == "BYE":
                         self.wfile.write("SIP/2.0 200 OK\r\n\r\n")

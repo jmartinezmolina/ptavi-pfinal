@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     try:
         #Envio del mensaje
-        my_socket.send(LINE + '\r\n')
+        my_socket.send(LINE)
         print "Enviando: " + LINE
         #Recibimos el mensaje
         data = my_socket.recv(1024)
@@ -147,7 +147,7 @@ if __name__ == "__main__":
                 if data.split("\r\n\r\n")[2] == "SIP/2.0 200 OK":
                     ack = "ACK sip:" + OPCION + " SIP/2.0\r\n\r\n"
                     my_socket.send(ack + "\r\n")
-        print "ENVIO: " + ack
+                    print "ENVIO: " + ack
 
     print "Terminando socket..."
     my_socket.close()
