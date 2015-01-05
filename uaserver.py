@@ -44,8 +44,8 @@ class SipHandler(SocketServer.DatagramRequestHandler):
                         self.wfile.write(msg)
                     elif metodo == "ACK":
                         os.system('chmod 755 mp32rtp')
-                        prog = './mp32rtp -i '
-                        run = prog + ip_client + ' -p ' + P_MP3 + ' < ' + MP3
+                        run = './mp32rtp -i ' + ip_client + ' -p '
+                        #run += RTPAUDIO_PORT + ' < ' + AUDIO_PATH
                         os.system(run)
                     elif metodo == "BYE":
                         self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     
     #Comprobación de posibles excepciones
     if len(sys.argv) != 2:
-        print 'Usage: python server.py IP port audio_file'
+        print 'Usage: python uaserver.py config'
         raise SystemExit
     
     FICHERO = str(sys.argv[1])
@@ -79,19 +79,15 @@ if __name__ == "__main__":
     REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
     LOG_PATH = chandler.dic_etiq['log_path']
     AUDIO_PATH = chandler.dic_etiq['audio_path']
-    
-    
-    
-    
-    
+
     if not os.path.exists(AUDIO_PATH):
-        print 'Usage: python server.py IP port audio_file'
+        print 'Usage: python uaserver.py config'
         raise SystemExit
 
     try:
         UASERVER_PORT = int(chandler.dic_etiq['uaserver_puerto'])
     except ValueError:
-        print 'Usage: python server.py IP port audio_file'
+        print 'Usage: python uaserver.py config'
         raise SystemExit
     
     serv = SocketServer.UDPServer(("", UASERVER_PORT), SipHandler)

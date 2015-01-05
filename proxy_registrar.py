@@ -9,6 +9,7 @@ import SocketServer
 import sys
 import time
 import uaclient
+import socket
 
 
 class XMLHandler(ContentHandler):
@@ -97,7 +98,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                         for user in self.dic_reg.keys():
                             if self.dic_reg[user][1] <= tiempo_actual:
                                 del self.dic_reg[user]
-                        self.register2file()
+                        self.register2file(DATABASE_PATH)
                     #añado al user a la lista
                     time_expired = time.time() + float(list_palabras[4])
                     recorte = list_palabras[1].split(":")
@@ -127,8 +128,28 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     if self.dic_reg:
                         for user in self.dic_reg.keys():
                             if user == mail:
-                                print user
-                                print mail
+                                ip_user = self.dic_reg[mail][0]
+                                port_user = int(self.dic_reg[mail][2])
+                                print 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii'
+                                print ip_user
+                                print port_user
+                                print 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+                                # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
+                                my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                                my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                                my_socket.connect((ip_user, port_user))
+                                try:
+                                    #Envio del mensaje
+                                    my_socket.send(line + '\r\n')
+                                    print "Enviando: " + line
+                                    #Recibimos el mensaje
+                                    data = my_socket.recv(1024)
+                                except socket.error:
+                                    port = str(UASERVER_PORT)
+                                    print 'Error: No server listening at ' + UASERVER_IP + ' port ' + port
+                                    raise SystemExit
+                                self.wfile.write(data)
+                                print 'Recibido -- \r\n\r\n', data
                     #print recorte
                 else:
                     self.wfile.write("SIP/2.0 400 Bad Request\r\n\r\n")
