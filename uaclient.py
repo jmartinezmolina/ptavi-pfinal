@@ -116,10 +116,10 @@ if __name__ == "__main__":
         LINE += "Content-Type: application/sdp\r\n\r\n"
         LINE += "v=0\r\n" + "o=" + USERNAME + " 127.0.0.1\r\n"
         LINE += "s=misesion\r\n" + "t=0\r\n" + "m=audio "
-        LINE += RTPAUDIO_PORT + " RTP"
+        LINE += str(RTPAUDIO_PORT) + " RTP"
     
     if METODO == "BYE":
-        LINE = METODO + " sip:" + OPCION + UASERVER_IP + " SIP/2.0\r\n\r\n"
+        LINE = METODO + " sip:" + OPCION + " SIP/2.0\r\n\r\n"
         
    
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
@@ -134,8 +134,8 @@ if __name__ == "__main__":
         #Recibimos el mensaje
         data = my_socket.recv(1024)
     except socket.error:
-        port = str(UASERVER_PORT)
-        print 'Error: No server listening at ' + UASERVER_IP + ' port ' + port
+        port = str(REGPROXY_PORT)
+        print 'Error: No server listening at ' + REGPROXY_IP + ' port ' + port
         raise SystemExit
 
     print 'Recibido -- \r\n\r\n', data
@@ -145,9 +145,9 @@ if __name__ == "__main__":
         if data.split("\r\n\r\n")[0] == "SIP/2.0 100 Trying":
             if data.split("\r\n\r\n")[1] == "SIP/2.0 180 Ringing":
                 if data.split("\r\n\r\n")[2] == "SIP/2.0 200 OK":
-                    ack = "ACK sip:" + OPCION + "@" + REGPROXY_IP
-                    ack += " SIP/2.0\r\n\r\n"
+                    ack = "ACK sip:" + OPCION + " SIP/2.0\r\n\r\n"
                     my_socket.send(ack + "\r\n")
+        print "ENVIO: " + ack
 
     print "Terminando socket..."
     my_socket.close()
