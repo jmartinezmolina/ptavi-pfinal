@@ -8,6 +8,7 @@ from xml.sax.handler import ContentHandler
 import socket
 import sys
 import os
+import time
 
 
 class XMLHandler(ContentHandler):
@@ -61,6 +62,14 @@ class XMLHandler(ContentHandler):
                     if etiqueta == "path":
                         self.dic_etiq['audio_path'] = dic[etiqueta]
 
+    def add_to_log(self, LOG_PATH, add):
+        
+        hora = str(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
+        recorte = add.split('\r\n')
+        ' '.join(recorte)
+        fich = open(LOG_PATH, "a")
+        fich.write(hora + ' ' + recorte[0] + '...\r\n')
+
 
 if __name__ == "__main__":
 
@@ -91,6 +100,9 @@ if __name__ == "__main__":
     REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
     REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
     LOG_PATH = chandler.dic_etiq['log_path']
+    
+    add = " Starting"
+    chandler.add_to_log(LOG_PATH, add)
 
     if METODO == "REGISTER":
         try:
@@ -123,12 +135,21 @@ if __name__ == "__main__":
     try:
         #Envio del mensaje
         my_socket.send(LINE)
+        add = " send to " + str(REGPROXY_IP) + ":"
+        add += str(REGPROXY_PORT) + ' ' + str(LINE)
+        chandler.add_to_log(LOG_PATH, add)
         print "Enviando: " + LINE
         #Recibimos el mensaje
         data = my_socket.recv(1024)
+        add = " Received from " + str(REGPROXY_IP) + ":"
+        add += str(REGPROXY_PORT) + ' ' + str(data)
+        chandler.add_to_log(LOG_PATH, add)
     except socket.error:
         port = str(REGPROXY_PORT)
-        print 'Error: No server listening at ' + REGPROXY_IP + ' port ' + port
+        error = 'Error: No server listening at ' + REGPROXY_IP + ' port ' + port
+        print error
+        add = ' ' + str(error)
+        chandler.add_to_log(LOG_PATH, add)
         raise SystemExit
 
     print 'Recibido -- \r\n\r\n', data
@@ -139,6 +160,9 @@ if __name__ == "__main__":
                 if data.split("\r\n\r\n")[2] == "SIP/2.0 200 OK":
                     ack = "ACK sip:" + OPCION + " SIP/2.0\r\n\r\n"
                     my_socket.send(ack + "\r\n")
+                    add = ' send to ' + str(REGPROXY_IP) + ":"
+                    add += str(REGPROXY_PORT) + ' ' + str(ack)
+                    chandler.add_to_log(LOG_PATH, add)
                     print "ENVIO: " + ack
 
     print "Terminando socket..."
