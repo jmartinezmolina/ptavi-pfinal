@@ -22,6 +22,8 @@ class SipHandler(SocketServer.DatagramRequestHandler):
     dic_info = {}
     
     def handle(self):
+    
+        global USERNAME, UASERVER_IP, RTPAUDIO_PORT
 
         while 1:
             # Leyendo línea a línea lo que nos envía el cliente
@@ -46,7 +48,12 @@ class SipHandler(SocketServer.DatagramRequestHandler):
                                 self.dic_info[key_value[0]] = key_value[1]
                         msg = "SIP/2.0 100 Trying\r\n\r\n"
                         msg += "SIP/2.0 180 Ringing\r\n\r\n"
-                        msg += "SIP/2.0 200 OK\r\n\r\n"
+                        msg += "SIP/2.0 200 OK\r\n"
+                        msg += "Content-Type: application/sdp\r\n\r\n"
+                        msg += "v=0\r\n" + "o=" + USERNAME + " " + UASERVER_IP
+                        msg += "\r\n" + "s=misesion\r\n" + "t=0\r\n"
+                        msg += "m=audio " + str(RTPAUDIO_PORT) + " RTP"
+                        
                         self.wfile.write(msg)
                         
                     elif metodo == "ACK":
@@ -81,6 +88,8 @@ if __name__ == "__main__":
     parser.parse(open(FICHERO))
     
     USERNAME = chandler.dic_etiq['account_username']
+    RTPAUDIO_PORT = int(chandler.dic_etiq['rtpaudio_puerto'])
+    UASERVER_IP = chandler.dic_etiq['uaserver_ip']
     LOG_PATH = chandler.dic_etiq['log_path']
     AUDIO_PATH = chandler.dic_etiq['audio_path']
 

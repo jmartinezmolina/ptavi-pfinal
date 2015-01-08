@@ -13,6 +13,7 @@ import time
 
 class XMLHandler(ContentHandler):
 
+
     def __init__(self):
         self.etiquetas = {'account': ['username', 'passwd'],
             'uaserver': ['ip', 'puerto'],
@@ -27,6 +28,7 @@ class XMLHandler(ContentHandler):
             'uaserver_ip': '', 'uaserver_puerto': '', 'rtpaudio_puerto': '',
             'regproxy_ip': '', 'regproxy_puerto': '', 'log_path': '',
             'audio_path': ''}
+
 
     def startElement(self, name, attrs):
         dic = {}
@@ -62,6 +64,7 @@ class XMLHandler(ContentHandler):
                     if etiqueta == "path":
                         self.dic_etiq['audio_path'] = dic[etiqueta]
 
+
     def add_to_log(self, LOG_PATH, add):
         
         hora = str(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
@@ -74,6 +77,7 @@ class XMLHandler(ContentHandler):
 if __name__ == "__main__":
 
     list_metodo = ['INVITE', 'REGISTER', 'BYE']
+    dic_info = {}
 
     #Comprobación de posibles excepciones
     if len(sys.argv) != 4:
@@ -100,6 +104,7 @@ if __name__ == "__main__":
     REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
     REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
     LOG_PATH = chandler.dic_etiq['log_path']
+    AUDIO_PATH = chandler.dic_etiq['audio_path']
     
     add = " Starting"
     chandler.add_to_log(LOG_PATH, add)
@@ -155,14 +160,28 @@ if __name__ == "__main__":
     print 'Recibido -- \r\n\r\n', data
     
     if METODO == "INVITE":
-        if data.split("\r\n\r\n")[0] == "SIP/2.0 100 Trying":
-            if data.split("\r\n\r\n")[1] == "SIP/2.0 180 Ringing":
-                if data.split("\r\n\r\n")[2] == "SIP/2.0 200 OK":
+        
+        r_metodo = data.split("\r\n\r\n")
+        if r_metodo[0] == "SIP/2.0 100 Trying":
+            if r_metodo[1] == "SIP/2.0 180 Ringing":
+                r_dos_ok = r_metodo[2].split('\r\n')
+                if r_dos_ok[0] == "SIP/2.0 200 OK":
                     ack = "ACK sip:" + OPCION + " SIP/2.0\r\n\r\n"
                     my_socket.send(ack + "\r\n")
                     add = ' send to ' + str(REGPROXY_IP) + ":"
                     add += str(REGPROXY_PORT) + ' ' + str(ack)
                     chandler.add_to_log(LOG_PATH, add)
+                    list_palabras = data.split("\r\n")
+                    for linea in list_palabras:
+                        key_value = linea.split('=')
+                        if len(key_value) == 2:
+                            dic_info[key_value[0]] = key_value[1]
+                    ip_client = dic_info['o'].split(' ')
+                    port_rtp = dic_info['m'].split(' ')
+                    os.system('chmod 755 mp32rtp')
+                    run = './mp32rtp -i ' + ip_client[1] + ' -p '
+                    run += port_rtp[1] + ' < ' + AUDIO_PATH
+                    os.system(run)
                     print "ENVIO: " + ack
 
     print "Terminando socket..."

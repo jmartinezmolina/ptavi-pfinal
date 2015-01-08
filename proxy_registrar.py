@@ -18,8 +18,7 @@ class XMLHandler(ContentHandler):
 
     def __init__(self):   
 
-        self.etiquetas = {'server': ['name', 'ip',
- 'puerto'],
+        self.etiquetas = {'server': ['name', 'ip', 'puerto'],
             'database': ['path', 'passwdpath'],
             'log': ['path']}
   
@@ -152,8 +151,9 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                                     port_user = int(self.dic_reg[mail][2])
                                     #envio del mensaje
                                     self.send_mensaje(ip_user, port_user, line)
-                               
-#self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
+                            if not self.dic_reg.has_key(mail):
+                                error = "SIP/2.0 404 User Not Found\r\n\r\n"
+                                self.wfile.write(error)
 
                     if list_palabras[0] == "ACK":
                         print "ackkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
@@ -166,7 +166,19 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                                     port_user = int(self.dic_reg[mail][2])
                                     #envio del mensaje
                                     self.send_mensaje(ip_user, port_user, line)
-               
+                    
+                    if list_palabras[0] == "BYE":
+                        print "byeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                        recorte = list_palabras[1].split(":")
+                        mail = recorte[1]
+                        if self.dic_reg:
+                            for user in self.dic_reg.keys():
+                                if user == mail:
+                                    ip_user = self.dic_reg[mail][0]
+                                    port_user = int(self.dic_reg[mail][2])
+                                    #envio del mensaje
+                                    self.send_mensaje(ip_user, port_user, line)
+                                                      
                     if list_palabras[0] not in LIST_METODO:
                         excepcion = "SIP/2.0 405 Method Not Allowed\r\n\r\n"
                         self.wfile.write(excepcion)
