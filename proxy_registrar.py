@@ -279,15 +279,24 @@ if __name__ == "__main__":
     """
     server_n = xml["server_name"]
     server_ip = xml["server_ip"]
+    if server_ip == "":
+        server_ip = "127.0.0.1"
     server_p = int(xml["server_puerto"])
-    # log
-    log = open(xml["log_path"], 'a')
-    inicio = "Server " + server_n + " listening at port "
-    inicio += str(server_p) + "...\r\n"
-    print "\n" + inicio
-        # ---> escribimos starting?
-    log.write(form_log + ' ' + inicio)
-    log.close()
-    # Creamos servidor de eco y escuchamos
-    serv = SocketServer.UDPServer((server_ip, server_p), EchoHandler)
-    serv.serve_forever()
+    
+    try:
+        inicio = "Server " + server_n + " listening at port " + str(server_p) + "...\r\n"
+        print "\n" + inicio
+        # log
+        log = open(xml["log_path"], 'a')
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Starting...\r\n')
+        log.close()
+        # Creamos servidor de eco y escuchamos
+        serv = SocketServer.UDPServer((server_ip, server_p), EchoHandler)
+        serv.serve_forever()
+    except(KeyboardInterrupt):
+        # log
+        log = open(xml["log_path"], 'a')
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + '...Finishing.\r\n\r\n')
+        log.close()
+        print "\nTerminando proxy..."
+        print "\nFin.\r\n"
