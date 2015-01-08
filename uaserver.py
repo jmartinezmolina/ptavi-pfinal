@@ -58,34 +58,32 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         SDP_uas += "s=sesion_uas\r\n" + "t=0\r\n"
                         SDP_uas += "m=audio " + xml["rtpaudio_puerto"]
                         SDP_uas += " RTP\r\n"
-
                         # Llega SDP del cliente, obtenemos los valores deseados
                         try:
-                            SDP_uac = line.split()[3:]
+                            SDP_uac = line.split('\r\n')[3:]
+                            # Busco en el sdp recibido la ip y el puerto
+                            for cab in range(len(SDP_uac)):
+                                if SDP_uac[cab].split("=")[0] == "o":
+                                    ip_rtp = SDP_uac[cab].split("=")[1].split(" ")[1]
+                                elif SDP_uac[cab].split("=")[0] == "m":
+                                    puerto_rtp = SDP_uac[cab].split("=")[1].split(" ")[1]
+                            # Guardo la ip y puerto para poder acceder más tarde
+                            Lista_SDP_uac = [ip_rtp, puerto_rtp]
+                            Dicc_SDP_uac['key'] = Lista_SDP_uac
+                            # Respondo al Invite
+                            line_send = 'SIP/2.0 100 Trying\r\n'
+                            self.log_send(rec_ip, rec_puerto, line_send)
+                            self.wfile.write(line_send + "\r\n")
+                            line_send = 'SIP/2.0 180 Ringing\r\n'
+                            self.log_send(rec_ip, rec_puerto, line_send)
+                            self.wfile.write(line_send + "\r\n")
+                            line_send = 'SIP/2.0 200 OK\r\n' + SDP_uas
+                            self.log_send(rec_ip, rec_puerto, line_send)
+                            self.wfile.write(line_send + "\r\n")
                         except IndexError:
                             line_send = 'SIP/2.0 400 Bad Request\r\n'
                             self.log_send(rec_ip, rec_puerto, line_send)
                             self.wfile.write(line_send + "\r\n")
-
-                        # for cab in SDP_uac:
-                        #    if cab.split("=")[0] == "o":
-                        #        uac_o_server_ip = cab.split("=")[1]
-                        #    elif cab.split("=")[0] == "m":
-                        #        uac_m_rtp_puerto = cab + 1
-
-                                #---> puedo dar por hecho eso? q lo mande como diccionario? for?
-                        Lista_SDP_uac = [SDP_uac[-6], SDP_uac[-2]]
-                        Dicc_SDP_uac['key'] = Lista_SDP_uac
-
-                        line_send = 'SIP/2.0 100 Trying\r\n'
-                        self.log_send(rec_ip, rec_puerto, line_send)
-                        self.wfile.write(line_send + "\r\n")
-                        line_send = 'SIP/2.0 180 Ringing\r\n'
-                        self.log_send(rec_ip, rec_puerto, line_send)
-                        self.wfile.write(line_send + "\r\n")
-                        line_send = 'SIP/2.0 200 OK\r\n' + SDP_uas + "\r\n"
-                        self.log_send(rec_ip, rec_puerto, line_send)
-                        self.wfile.write(line_send + "\r\n")
 
                     elif metodo == 'ACK':
                                 # --> no funcionaaaaaaaaaaaa
