@@ -106,6 +106,14 @@ if __name__ == "__main__":
     LOG_PATH = chandler.dic_etiq['log_path']
     AUDIO_PATH = chandler.dic_etiq['audio_path']
     
+    if not os.path.exists(LOG_PATH):
+        print 'Usage: python uaserver.py config'
+        raise SystemExit
+
+    if not os.path.exists(AUDIO_PATH):
+        print 'Usage: python uaserver.py config'
+        raise SystemExit
+    
     add = " Starting"
     chandler.add_to_log(LOG_PATH, add)
 
@@ -140,7 +148,7 @@ if __name__ == "__main__":
     try:
         #Envio del mensaje
         my_socket.send(LINE)
-        add = " send to " + str(REGPROXY_IP) + ":"
+        add = " Send to " + str(REGPROXY_IP) + ":"
         add += str(REGPROXY_PORT) + ' ' + str(LINE)
         chandler.add_to_log(LOG_PATH, add)
         print "Enviando: " + LINE
@@ -168,7 +176,7 @@ if __name__ == "__main__":
                 if r_dos_ok[0] == "SIP/2.0 200 OK":
                     ack = "ACK sip:" + OPCION + " SIP/2.0\r\n\r\n"
                     my_socket.send(ack + "\r\n")
-                    add = ' send to ' + str(REGPROXY_IP) + ":"
+                    add = ' Send to ' + str(REGPROXY_IP) + ":"
                     add += str(REGPROXY_PORT) + ' ' + str(ack)
                     chandler.add_to_log(LOG_PATH, add)
                     list_palabras = data.split("\r\n")

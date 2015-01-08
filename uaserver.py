@@ -10,6 +10,7 @@ import SocketServer
 import sys
 import os
 import uaclient
+import time
 
 list_metodo = ['INVITE', 'BYE', 'ACK']
 
@@ -21,9 +22,19 @@ class SipHandler(SocketServer.DatagramRequestHandler):
     list_palabras = []
     dic_info = {}
     
+    
+    def add_to_log(self, LOG_PATH, add):
+        
+        hora = str(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
+        recorte = add.split('\r\n')
+        ' '.join(recorte)
+        fich = open(LOG_PATH, "a")
+        fich.write(hora + ' ' + recorte[0] + '...\r\n')
+
+    
     def handle(self):
     
-        global USERNAME, UASERVER_IP, RTPAUDIO_PORT
+        global USERNAME, UASERVER_IP, RTPAUDIO_PORT, REGPROXY_IP, REGPROXY_PORT
 
         while 1:
             # Leyendo línea a línea lo que nos envía el cliente
@@ -56,6 +67,10 @@ class SipHandler(SocketServer.DatagramRequestHandler):
                         
                         self.wfile.write(msg)
                         
+                        add = " Send to " + str(REGPROXY_IP) + ":"
+                        add += str(REGPROXY_PORT) + ' ' + str(msg)
+                        self.add_to_log(LOG_PATH, add)
+                        
                     elif metodo == "ACK":
 
                         ip_client = self.dic_info['o'].split(' ')
@@ -64,14 +79,30 @@ class SipHandler(SocketServer.DatagramRequestHandler):
                         run = './mp32rtp -i ' + ip_client[1] + ' -p '
                         run += port_rtp[1] + ' < ' + AUDIO_PATH
                         os.system(run)
+                        add = " Send to " + ip_client[1] + ":"
+                        add += str(port_rtp[1]) + " " + AUDIO_PATH
+                        self.add_to_log(LOG_PATH, add)
                     elif metodo == "BYE":
-                        self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
+                        msg = "SIP/2.0 200 OK\r\n\r\n"
+                        self.wfile.write(msg)
+                        add = " Send to " + str(REGPROXY_IP) + ":"
+                        add += str(REGPROXY_PORT) + ' ' + str(msg)
+                        self.add_to_log(LOG_PATH, add)
+                        
                     elif metodo not in list_metodo:
                         excepcion = "SIP/2.0 405 Method Not Allowed\r\n\r\n"
                         self.wfile.write(excepcion)
+                        add = " Send to " + str(REGPROXY_IP) + ":"
+                        add += str(REGPROXY_PORT) + ' ' + str(excepcion)
+                        self.add_to_log(LOG_PATH, add)
                 else:
-                    self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
+                    excepcion = 'SIP/2.0 400 Bad Request\r\n\r\n'
+                    self.wfile.write(excepcion)
+                    add = " Send to " + str(REGPROXY_IP) + ":"
+                    add += str(REGPROXY_PORT) + ' ' + str(excepcion)
+                    self.add_to_log(LOG_PATH, add)
             break
+
 
 if __name__ == "__main__":
     
@@ -92,6 +123,12 @@ if __name__ == "__main__":
     UASERVER_IP = chandler.dic_etiq['uaserver_ip']
     LOG_PATH = chandler.dic_etiq['log_path']
     AUDIO_PATH = chandler.dic_etiq['audio_path']
+    REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
+    REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
+
+    if not os.path.exists(LOG_PATH):
+        print 'Usage: python uaserver.py config'
+        raise SystemExit
 
     if not os.path.exists(AUDIO_PATH):
         print 'Usage: python uaserver.py config'
@@ -103,6 +140,7 @@ if __name__ == "__main__":
         print 'Usage: python uaserver.py config'
         raise SystemExit
     
+    chandler.add_to_log(LOG_PATH, ' listening')
     serv = SocketServer.UDPServer(("", UASERVER_PORT), SipHandler)
     print "listening...\r\n"
     serv.serve_forever()
