@@ -191,12 +191,12 @@ if __name__ == "__main__":
 
                     # Envio RTP 
                     # Busco en el sdp recibido la ip y el puerto
-                    sdp = data_serv[7:len(data_serv)]
-                    for cab in range(len(sdp)):
-                        if sdp[cab].split("=")[0] == "o":
-                            ip_rtp = sdp[cab].split("=")[1].split(" ")[1]
-                        elif sdp[cab].split("=")[0] == "m":
-                            puerto_rtp = sdp[cab].split("=")[1].split(" ")[1]
+                    SDP_uas = data_serv[7:len(data_serv)]
+                    for cab in range(len(SDP_uas)):
+                        if SDP_uas[cab].split("=")[0] == "o":
+                            ip_rtp = SDP_uas[cab].split("=")[1].split(" ")[1]
+                        elif SDP_uas[cab].split("=")[0] == "m":
+                            puerto_rtp = SDP_uas[cab].split("=")[1].split(" ")[1]
                     # run: lo que se ha de ejecutar en la shell
                                     # ---> NO FUNCIONAAAAAAAAAAAAAAAA
                     run = './mp32rtp -i ' + ip_rtp + " -p " + puerto_rtp
