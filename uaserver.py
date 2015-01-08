@@ -175,14 +175,23 @@ if __name__ == "__main__":
     """
     SOCKET
     """
-    # log
-    log = open(xml["log_path"], 'a')
-        # ---> escribimos listening o starting?
-    print '\nListening...'
-    log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Listening...\r\n')
-    log.close()
-    # Creamos servidor de eco y escuchamos
     server_ip = xml["uaserver_ip"]
+    if server_ip == "":
+        server_ip = "127.0.0.1"
     server_p = int(xml["uaserver_puerto"])
-    serv = SocketServer.UDPServer((server_ip, server_p), EchoHandler)
-    serv.serve_forever()
+    try:
+        print '\nListening...'
+        # log
+        log = open(xml["log_path"], 'a')
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Starting...\r\n')
+        log.close()
+        # Creamos servidor de eco y escuchamos
+        serv = SocketServer.UDPServer((server_ip, server_p), EchoHandler)
+        serv.serve_forever()
+    except(KeyboardInterrupt):
+        # log
+        log = open(xml["log_path"], 'a')
+        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + '...Finishing.\r\n\r\n')
+        log.close()
+        print "\nTerminando server..."
+        print "\nFin.\r\n"
