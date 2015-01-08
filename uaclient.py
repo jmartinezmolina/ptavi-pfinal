@@ -190,11 +190,15 @@ if __name__ == "__main__":
                     my_socket.send(line_send + '\r\n')
 
                     # Envio RTP 
-                                    # ---> esto es así??
-                    ip_rtp = data_serv[8].split(' ')[1]
-                    puerto_rtp = data_serv[11].split(' ')[1]
+                    # Busco en el sdp recibido la ip y el puerto
+                    sdp = data_serv[7:len(data_serv)]
+                    for cab in range(len(sdp)):
+                        if sdp[cab].split("=")[0] == "o":
+                            ip_rtp = sdp[cab].split("=")[1].split(" ")[1]
+                        elif sdp[cab].split("=")[0] == "m":
+                            puerto_rtp = sdp[cab].split("=")[1].split(" ")[1]
                     # run: lo que se ha de ejecutar en la shell
-                                    # ---> lo manda directamente no???
+                                    # ---> NO FUNCIONAAAAAAAAAAAAAAAA
                     run = './mp32rtp -i ' + ip_rtp + " -p " + puerto_rtp
                     run += " < " + xml["audio_path"]
                     print "Vamos a ejecutar", run
