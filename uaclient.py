@@ -15,8 +15,8 @@ class Log():
     """
     Guardar mensajes de depuración de envío en .log
     """
-    def log_send(self, ip, puerto, line_send):
-        log = open(xml["log_path"], 'a')
+    def log_send(self, ip, puerto, line_send, fich):
+        log = open(fich, 'a')
         send_to = "Sent to " + ip + ":" + str(puerto)
         print "\n" + send_to
         line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
@@ -27,8 +27,8 @@ class Log():
     """
     Guardar mensajes de depuración de recibo en .log
     """
-    def log_rec(self, ip, puerto, line_rec):
-        log = open(xml["log_path"], 'a')
+    def log_rec(self, ip, puerto, line_rec, fich):
+        log = open(fich, 'a')
         rec_from = 'Received from ' + ip + ":" + str(puerto)
         print "\n" + rec_from
         line_log = rec_from + ": " + line_rec.replace('\r\n', ' ') + '\r\n'
@@ -37,11 +37,10 @@ class Log():
         print "\nRecibido -- " + line_rec
 
 
-"""
-LEER EL FICHERO XML
-"""
 class XMLHandler(ContentHandler):
-
+    """
+    LEER EL FICHERO XML
+    """
     def __init__(self):
         self.diccionario = {}
         self.atributos = {
@@ -131,16 +130,21 @@ if __name__ == "__main__":
     """
     print '\nStarting...'
 
+    # log
     Log = Log()
+    f_log = xml["log_path"]
+    form_log = time.strftime('%Y%m%d%H%M%S')
 
     # Contenido que vamos a enviar dependiendo del metodo
     line_send = METODO + " sip:"
+    prox_ip = xml["regproxy_ip"]
+    prox_p = int(xml["regproxy_puerto"])
 
     if METODO == "REGISTER":
         line_send += xml["account_username"] + ":" + xml["uaserver_puerto"]
         line_send += " SIP/2.0\r\n"
         line_send += "Expires: " + str(OPCION) + "\r\n"
-        Log.log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
+        Log.log_send(prox_ip, prox_p, line_send, f_log)
 
     if METODO == "INVITE":
         line_send += OPCION + " SIP/2.0\r\n"
@@ -153,33 +157,33 @@ if __name__ == "__main__":
         line_send += uaserver_ip + "\r\n"
         line_send += "s=sesion_uac\r\n" + "t=0\r\n"
         line_send += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
-        Log.log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
+        Log.log_send(prox_ip, prox_p, line_send, f_log)
 
     if METODO == "BYE":
         line_send += OPCION + " SIP/2.0\r\n"
-        Log.log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
+        Log.log_send(prox_ip, prox_p, line_send, f_log)
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    my_socket.connect((xml["regproxy_ip"], int(xml["regproxy_puerto"])))
+    my_socket.connect((prox_ip, int(prox_p)))
     my_socket.send(line_send + '\r\n')
 
     # Error si el servidor no está lanzado
     try:
         data = my_socket.recv(1024)
     except socket.error:
-        line_log = "Error: No server listening at " + xml["regproxy_ip"]
-        line_log += " port " + str(xml["regproxy_puerto"]) + "\r\n"
+        line_log = "Error: No server listening at " + prox_ip
+        line_log += " port " + str(prox_p) + "\r\n"
         print line_log
         # log
-        log = open(xml["log_path"], 'a')
-        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + line_log)
+        log = open(f_log, 'a')
+        log.write(form_log + ' ' + line_log)
         log.close()
         raise SystemExit
 
     # Recibo respuesta
-    Log.log_rec(xml["regproxy_ip"], xml["regproxy_puerto"], data)
+    Log.log_rec(prox_ip, prox_p, data, f_log)
     data_serv = data.split('\r\n')
 
     # Si recibe esos códigos, envía el ACK y el audio RTP
@@ -189,32 +193,29 @@ if __name__ == "__main__":
                 if data_serv[4] == 'SIP/2.0 200 OK':
                     # Envio el ACK
                     line_send = "ACK sip:" + OPCION + " SIP/2.0\r\n"
-                    prox_ip = xml["regproxy_ip"]
-                    prox_puerto = int(xml["regproxy_puerto"])
-                    Log.log_send(prox_ip, prox_puerto, line_send)
+                    Log.log_send(prox_ip, prox_p, line_send, f_log)
                     my_socket.send(line_send + '\r\n')
-
-                    # Envio RTP 
+                    # Envio RTP
                     try:
                         # Busco en el sdp recibido la ip y el puerto
                         SDP_uas = data_serv[7:]
-                        for cab in range(len(SDP_uas)):
-                            if SDP_uas[cab].split("=")[0] == "o":
-                                ip_rtp = SDP_uas[cab].split("=")[1].split(" ")[1]
-                            elif SDP_uas[cab].split("=")[0] == "m":
-                                puerto_rtp = SDP_uas[cab].split("=")[1].split(" ")[1]
+                        for linea in range(len(SDP_uas)):
+                            cabecera = SDP_uas[linea].split("=")
+                            if cabecera[0] == "o":
+                                rtp_ip = cabecera[1].split(" ")[1]
+                            elif cabecera[0] == "m":
+                                rtp_p = cabecera[1].split(" ")[1]
                         # run: lo que se ha de ejecutar en la shell
-                                        # ---> NO FUNCIONAAAAAAAAAAAAAAAA
-                        run = './mp32rtp -i ' + ip_rtp + " -p " + puerto_rtp
+                        run = './mp32rtp -i ' + rtp_ip + " -p " + rtp_p
                         run += " < " + xml["audio_path"]
                         print "Vamos a ejecutar", run
                         os.system(run)
                         line_send = "RTP audio\r\n"
-                        Log.log_send(ip_rtp, puerto_rtp, line_send)
+                        Log.log_send(rtp_ip, rtp_p, line_send, f_log)
                         print "\r\nEl fichero de audio ha finalizado\r\n\r\n"
                     except IndexError:
                         print "\r\nError, SDP recibido incorrecto\r\n\r\n"
-    
+
     # Cerramos el socket
     print "Terminando socket..."
     my_socket.close()
