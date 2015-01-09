@@ -58,7 +58,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                             SDP_uac = line.split('\r\n')[3:]
                             # Busco en el sdp recibido la ip y el puerto
                             for linea in range(len(SDP_uac)):
-                                cabecera = SDP_uas[linea].split("=")
+                                cabecera = SDP_uac[linea].split("=")
                                 if cabecera[0] == "o":
                                     rtp_ip = cabecera[1].split(" ")[1]
                                 elif cabecera[0] == "m":
