@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-15 -*-
-
 # Práctica Final   JAVIER MARTINEZ MOLINA
 
 from xml.sax import make_parser
@@ -138,7 +137,7 @@ if __name__ == "__main__":
             raise SystemExit
 
         LINE = METODO + " sip:" + USERNAME + ":"
-        LINE += str(UASERVER_PORT) + " SIP/2.0" + "\r\n\r\n"
+        LINE += str(UASERVER_PORT) + " SIP/2.0" + "\r\n"
         LINE = LINE + "Expires: " + OPCION + "\r\n\r\n"
 
     if METODO == "INVITE":
@@ -147,7 +146,7 @@ if __name__ == "__main__":
         LINE += "Content-Type: application/sdp\r\n\r\n"
         LINE += "v=0\r\n" + "o=" + USERNAME + " " + UASERVER_IP + "\r\n"
         LINE += "s=misesion\r\n" + "t=0\r\n" + "m=audio "
-        LINE += str(RTPAUDIO_PORT) + " RTP"
+        LINE += str(RTPAUDIO_PORT) + " RTP\r\n\r\n"
 
     if METODO == "BYE":
         LINE = METODO + " sip:" + OPCION + " SIP/2.0\r\n\r\n"
@@ -205,7 +204,7 @@ if __name__ == "__main__":
                     run = './mp32rtp -i ' + ip_client[1] + ' -p '
                     run += port_rtp[1] + ' < ' + AUDIO_PATH
                     os.system(run)
-                    print "ENVIO: " + ack
+                    print "Envio: " + ack
 
     print "Terminando socket..."
     my_socket.close()

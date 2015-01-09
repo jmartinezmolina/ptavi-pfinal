@@ -1,6 +1,6 @@
 <config>
     <account username = "nandorock@rekover.com" passwd = "metallica"></account>
-    <uaserver ip = "127.0.0.1" puerto = "9000"></uaserver>
+    <uaserver ip = "127.0.0.1" puerto = "8000"></uaserver>
     <rtpaudio puerto = "42350"></rtpaudio>
     <regproxy ip = "127.0.0.1" puerto = "5555"></regproxy>
     <log path = "log.txt"></log>

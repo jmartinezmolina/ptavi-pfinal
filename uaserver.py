@@ -11,6 +11,7 @@ import sys
 import os
 import uaclient
 import time
+import socket
 
 list_metodo = ['INVITE', 'BYE', 'ACK']
 
