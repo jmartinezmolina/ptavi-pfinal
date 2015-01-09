@@ -147,10 +147,10 @@ if __name__ == "__main__":
         line_send += "Content-Type: application/sdp\r\n\r\n"
         line_send += "v=0\r\n"
         line_send += "o=" + xml["account_username"] + " "
-        server_ip = xml["uaserver_ip"]
-        if server_ip == "":
-            server_ip = "127.0.0.1"
-        line_send += server_ip + "\r\n"
+        uaserver_ip = xml["uaserver_ip"]
+        if uaserver_ip == "":
+            uaserver_ip = "127.0.0.1"
+        line_send += uaserver_ip + "\r\n"
         line_send += "s=sesion_uac\r\n" + "t=0\r\n"
         line_send += "m=audio " + xml["rtpaudio_puerto"] + " RTP\r\n"
         Log.log_send(xml["regproxy_ip"], xml["regproxy_puerto"], line_send)
