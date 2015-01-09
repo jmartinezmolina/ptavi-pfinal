@@ -15,20 +15,18 @@ LIST_METODO = ['REGISTER', 'INVITE', 'BYE', 'ACK']
 
 
 class XMLHandler(ContentHandler):
-    
 
-    def __init__(self):   
+    def __init__(self):
 
         self.etiquetas = {'server': ['name', 'ip', 'puerto'],
-            'database': ['path', 'passwdpath'],
-            'log': ['path']}
-  
-        self.list_etiquetas = []
-    
-        self.dic_etiq = {'server_name': '', 'server_ip': '',
-            'server_puerto': '', 'database_path': '', 
-            'database_passwdpath': '', 'log_path': ''}
+                          'database': ['path', 'passwdpath'],
+                          'log': ['path']}
 
+        self.list_etiquetas = []
+
+        self.dic_etiq = {'server_name': '', 'server_ip': '',
+                         'server_puerto': '', 'database_path': '',
+                         'database_passwdpath': '', 'log_path': ''}
 
     def startElement(self, name, attrs):
 
@@ -58,27 +56,25 @@ class XMLHandler(ContentHandler):
 
 
 class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
-    
+
     dic_reg = {}
     list_palabras = []
     dic_info = {}
-    
-    
+
     def add_to_log(self, LOG_PROXY_PATH, add):
-        
+
         hora = str(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
         recorte = add.split('\r\n')
         ' '.join(recorte)
         fich = open(LOG_PROXY_PATH, "a")
         fich.write(hora + ' ' + recorte[0] + '...\r\n')
-        
-    
+
     def send_mensaje(self, ip_user, port_user, line):
-    
+
         my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         my_socket.connect((ip_user, port_user))
-        
+
         try:
             #Envio del mensaje
             my_socket.send(line)
@@ -90,14 +86,13 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             self.add_to_log(LOG_PROXY_PATH, add)
         except socket.error:
             port = str(port_user)
-            error = 'Error: No server listening at ' + ip_user + ' port ' + port
-            print error
-            add = ' ' + error
+            err = 'Error: No server listening at ' + ip_user + ' port ' + port
+            print err
+            add = ' ' + err
             self.add_to_log(LOG_PROXY_PATH, add)
             raise SystemExit
         self.wfile.write(data)
         print 'Recibido -- \r\n\r\n', data
-
 
     def register2file(self, DATABASE_PATH):
         """
@@ -109,13 +104,13 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             expires = str(self.dic_reg[mail][1])
             t = str(time.time())
             datos = mail + "\t" + self.dic_reg[mail][0] + "\t"
-            datos += self.dic_reg[mail][2] + "\t" + t + "\t" + expires  + "\r\n"
+            datos += self.dic_reg[mail][2] + "\t" + t + "\t" + expires + "\r\n"
             fich.write(datos)
         fich.close()
 
     def handle(self):
         """
-        Se comprueba el tipo de mensaje,la caducidad de los usuarios, se añade 
+        Se comprueba el tipo de mensaje,la caducidad de los usuarios, se añade
         al dic a los users válidos y se borra a los user con EXPIRES a 0.
         """
         while 1:
@@ -155,7 +150,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                         add = " Send to " + str(self.client_address[0]) + ":"
                         add += str(port) + ' ' + "SIP/2.0 200 OK\r\n\r\n"
                         self.add_to_log(LOG_PROXY_PATH, add)
-                        
+
                         list_atrib = [self.client_address[0], t_expired, port]
                         #guardo usuario en el diccionario de registro
                         self.dic_reg[mail] = list_atrib
@@ -168,7 +163,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                         #print self.client_address
                         print line
                     if list_palabras[0] == "INVITE":
-                    
+
                         #log
                         add = " Received from: " + str(self.client_address[0])
                         add += ":" + str(self.client_address[1]) + " " + line
@@ -182,8 +177,8 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                             if len(key_value) == 2:
                                 self.dic_info[key_value[0]] = key_value[1]
                         ip_client = self.dic_info['o'].split(' ')
-                        
-                        if self.dic_reg.has_key(ip_client[0]):
+
+                        if ip_client[0] in self.dic_reg:
                             for user in self.dic_reg.keys():
                                 if user == mail:
                                     ip_user = self.dic_reg[mail][0]
@@ -194,8 +189,8 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                                     add = " Send to " + str(ip_user) + ":"
                                     add += str(port_user) + ' ' + str(line)
                                     self.add_to_log(LOG_PROXY_PATH, add)
-                                    
-                            if not self.dic_reg.has_key(mail):
+
+                            if not mail in self.dic_reg:
                                 error = "SIP/2.0 404 User Not Found\r\n\r\n"
                                 self.wfile.write(error)
                                 #log
@@ -211,7 +206,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                             add += ":" + str(self.client_address[1])
                             add += " " + str(error)
                             self.add_to_log(LOG_PROXY_PATH, add)
-                            
+
                     if list_palabras[0] == "ACK":
                         #log
                         add = " Received from: " + str(self.client_address[0])
@@ -250,7 +245,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                                     add = " Send to " + str(ip_user) + ":"
                                     add += str(port_user) + ' ' + str(line)
                                     self.add_to_log(LOG_PROXY_PATH, add)
-                                                      
+
                     if list_palabras[0] not in LIST_METODO:
                         excepcion = "SIP/2.0 405 Method Not Allowed\r\n\r\n"
                         self.wfile.write(excepcion)
@@ -273,9 +268,9 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         print 'Usage: python proxy_registrar.py config'
         raise SystemExit
-    
+
     FICHERO = str(sys.argv[1])
-    
+
     parser = make_parser()
     chandler = XMLHandler()
     parser.setContentHandler(chandler)
@@ -283,8 +278,23 @@ if __name__ == "__main__":
     DATABASE_PATH = str(chandler.dic_etiq['database_path'])
     LOG_PROXY_PATH = chandler.dic_etiq['log_path']
     SERV_NAME = chandler.dic_etiq['server_name']
-    SERV_PORT = int(chandler.dic_etiq['server_puerto'])
-    
+    SERV_IP = chandler.dic_etiq['server_ip']
+
+    if SERV_IP == "":
+        SERV_IP = "127.0.0.1"
+    else:
+        try:
+            socket.inet_aton(SERV_IP)
+        except socket.error:
+            print "Error: IP invalid"
+            raise SystemExit
+
+    try:
+        SERV_PORT = int(chandler.dic_etiq['server_puerto'])
+    except ValueError:
+        print "Error: The port must be an integer"
+        raise SystemExit
+
     if not os.path.exists(DATABASE_PATH):
         print 'Usage: python uaserver.py config'
         raise SystemExit
@@ -293,6 +303,7 @@ if __name__ == "__main__":
         print 'Usage: python uaserver.py config'
         raise SystemExit
 
-    serv = SocketServer.UDPServer(("", SERV_PORT), SIPRegisterHandler)
-    print "Server " + SERV_NAME + " listening at port " + str(SERV_PORT) + "..."
+    serv = SocketServer.UDPServer((SERV_IP, SERV_PORT), SIPRegisterHandler)
+    pr = "Server " + SERV_NAME + " listening at port " + str(SERV_PORT) + "..."
+    print pr
     serv.serve_forever()

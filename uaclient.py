@@ -13,22 +13,21 @@ import time
 
 class XMLHandler(ContentHandler):
 
-
     def __init__(self):
         self.etiquetas = {'account': ['username', 'passwd'],
-            'uaserver': ['ip', 'puerto'],
-            'rtpaudio': ['puerto'],
-            'regproxy': ['ip', 'puerto'],
-            'log': ['path'],
-            'audio': ['path']}
-  
-        self.list_etiquetas = []
-        
-        self.dic_etiq = {'account_username': '', 'account_passwd': '',
-            'uaserver_ip': '', 'uaserver_puerto': '', 'rtpaudio_puerto': '',
-            'regproxy_ip': '', 'regproxy_puerto': '', 'log_path': '',
-            'audio_path': ''}
+                          'uaserver': ['ip', 'puerto'],
+                          'rtpaudio': ['puerto'],
+                          'regproxy': ['ip', 'puerto'],
+                          'log': ['path'],
+                          'audio': ['path']}
 
+        self.list_etiquetas = []
+
+        self.dic_etiq = {'account_username': '', 'account_passwd': '',
+                         'uaserver_ip': '', 'uaserver_puerto': '',
+                         'rtpaudio_puerto': '', 'regproxy_ip': '',
+                         'regproxy_puerto': '', 'log_path': '',
+                         'audio_path': ''}
 
     def startElement(self, name, attrs):
         dic = {}
@@ -64,15 +63,13 @@ class XMLHandler(ContentHandler):
                     if etiqueta == "path":
                         self.dic_etiq['audio_path'] = dic[etiqueta]
 
-
     def add_to_log(self, LOG_PATH, add):
-        
+
         hora = str(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
         recorte = add.split('\r\n')
         ' '.join(recorte)
         fich = open(LOG_PATH, "a")
         fich.write(hora + ' ' + recorte[0] + '...\r\n')
-
 
 if __name__ == "__main__":
 
@@ -91,21 +88,37 @@ if __name__ == "__main__":
     METODO = str(sys.argv[2]).upper()
     FICHERO = str(sys.argv[1])
     OPCION = str(sys.argv[3])
-    
+
     parser = make_parser()
     chandler = XMLHandler()
     parser.setContentHandler(chandler)
     parser.parse(open(FICHERO))
-    
+
     USERNAME = chandler.dic_etiq['account_username']
     UASERVER_IP = chandler.dic_etiq['uaserver_ip']
-    UASERVER_PORT = int(chandler.dic_etiq['uaserver_puerto'])
-    RTPAUDIO_PORT = int(chandler.dic_etiq['rtpaudio_puerto'])
-    REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
-    REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
+
+    try:
+        UASERVER_PORT = int(chandler.dic_etiq['uaserver_puerto'])
+        RTPAUDIO_PORT = int(chandler.dic_etiq['rtpaudio_puerto'])
+        REGPROXY_PORT = int(chandler.dic_etiq['regproxy_puerto'])
+    except ValueError:
+        print "Error: The port must be an integer"
+        raise SystemExit
+
     LOG_PATH = chandler.dic_etiq['log_path']
     AUDIO_PATH = chandler.dic_etiq['audio_path']
-    
+    REGPROXY_IP = chandler.dic_etiq['regproxy_ip']
+
+    if UASERVER_IP == "":
+        UASERVER_IP = "127.0.0.1"
+    else:
+        try:
+            socket.inet_aton(UASERVER_IP)
+            socket.inet_aton(REGPROXY_IP)
+        except socket.error:
+            print "Error: IP invalid"
+            raise SystemExit
+
     if not os.path.exists(LOG_PATH):
         print 'Usage: python uaserver.py config'
         raise SystemExit
@@ -113,7 +126,7 @@ if __name__ == "__main__":
     if not os.path.exists(AUDIO_PATH):
         print 'Usage: python uaserver.py config'
         raise SystemExit
-    
+
     add = " Starting"
     chandler.add_to_log(LOG_PATH, add)
 
@@ -123,10 +136,10 @@ if __name__ == "__main__":
         except ValueError:
             print 'Usage: python uaclient.py config REGISTER -time-expires-'
             raise SystemExit
-            
+
         LINE = METODO + " sip:" + USERNAME + ":"
         LINE += str(UASERVER_PORT) + " SIP/2.0" + "\r\n\r\n"
-        LINE = LINE + "Expires: " + OPCION + "\r\n\r\n"       
+        LINE = LINE + "Expires: " + OPCION + "\r\n\r\n"
 
     if METODO == "INVITE":
         # Contenido que vamos a enviar
@@ -135,10 +148,9 @@ if __name__ == "__main__":
         LINE += "v=0\r\n" + "o=" + USERNAME + " " + UASERVER_IP + "\r\n"
         LINE += "s=misesion\r\n" + "t=0\r\n" + "m=audio "
         LINE += str(RTPAUDIO_PORT) + " RTP"
-    
+
     if METODO == "BYE":
         LINE = METODO + " sip:" + OPCION + " SIP/2.0\r\n\r\n"
-
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -159,16 +171,16 @@ if __name__ == "__main__":
         chandler.add_to_log(LOG_PATH, add)
     except socket.error:
         port = str(REGPROXY_PORT)
-        error = 'Error: No server listening at ' + REGPROXY_IP + ' port ' + port
-        print error
-        add = ' ' + str(error)
+        err = 'Error: No server listening at ' + REGPROXY_IP + ' port ' + port
+        print err
+        add = ' ' + str(err)
         chandler.add_to_log(LOG_PATH, add)
         raise SystemExit
 
     print 'Recibido -- \r\n\r\n', data
-    
+
     if METODO == "INVITE":
-        
+
         r_metodo = data.split("\r\n\r\n")
         if r_metodo[0] == "SIP/2.0 100 Trying":
             if r_metodo[1] == "SIP/2.0 180 Ringing":
@@ -186,6 +198,9 @@ if __name__ == "__main__":
                             dic_info[key_value[0]] = key_value[1]
                     ip_client = dic_info['o'].split(' ')
                     port_rtp = dic_info['m'].split(' ')
+                    ejecutar_vlc = "cvlc rtp://@" + UASERVER_IP
+                    ejecutar_vlc += ":" + str(RTPAUDIO_PORT) + "&"
+                    os.system(ejecutar_vlc)
                     os.system('chmod 755 mp32rtp')
                     run = './mp32rtp -i ' + ip_client[1] + ' -p '
                     run += port_rtp[1] + ' < ' + AUDIO_PATH
