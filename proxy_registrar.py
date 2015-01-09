@@ -60,6 +60,9 @@ class XMLHandler(ContentHandler):
 class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
     
     dic_reg = {}
+    list_palabras = []
+    dic_info = {}
+    
     
     def add_to_log(self, LOG_PROXY_PATH, add):
         
@@ -78,7 +81,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         
         try:
             #Envio del mensaje
-            my_socket.send(line + '\r\n')
+            my_socket.send(line)
             print "Enviando: " + line
             #Recibimos el mensaje
             data = my_socket.recv(1024)
@@ -87,8 +90,10 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             self.add_to_log(LOG_PROXY_PATH, add)
         except socket.error:
             port = str(port_user)
-            print 'Error: No server listening at ' + ip_user + ' port ' + port
+            error = 'Error: No server listening at ' + ip_user + ' port ' + port
             print error
+            add = ' ' + error
+            self.add_to_log(LOG_PROXY_PATH, add)
             raise SystemExit
         self.wfile.write(data)
         print 'Recibido -- \r\n\r\n', data
@@ -171,7 +176,14 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                         print ' inviteeeeeeeeeeeeeeeeeeeee'
                         recorte = list_palabras[1].split(":")
                         mail = recorte[1]
-                        if self.dic_reg:
+                        self.list_palabras = line.split("\r\n")
+                        for linea in self.list_palabras:
+                            key_value = linea.split('=')
+                            if len(key_value) == 2:
+                                self.dic_info[key_value[0]] = key_value[1]
+                        ip_client = self.dic_info['o'].split(' ')
+                        
+                        if self.dic_reg.has_key(ip_client[0]):
                             for user in self.dic_reg.keys():
                                 if user == mail:
                                     ip_user = self.dic_reg[mail][0]
@@ -191,7 +203,15 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                                 add += ":" + str(self.client_address[1])
                                 add += " " + str(error)
                                 self.add_to_log(LOG_PROXY_PATH, add)
-
+                        else:
+                            error = "SIP/2.0 436 Bad Identity Info\r\n\r\n"
+                            self.wfile.write(error)
+                            #log
+                            add = " Send to " + str(self.client_address[0])
+                            add += ":" + str(self.client_address[1])
+                            add += " " + str(error)
+                            self.add_to_log(LOG_PROXY_PATH, add)
+                            
                     if list_palabras[0] == "ACK":
                         #log
                         add = " Received from: " + str(self.client_address[0])
