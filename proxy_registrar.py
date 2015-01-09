@@ -9,14 +9,13 @@ import sys
 import time
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
-
-"""
-LEER EL FICHERO XML
-"""
+from uaclient import Log
 
 
 class XMLHandler(ContentHandler):
-
+    """
+    LEER EL FICHERO XML
+    """
     def __init__(self):
         self.dicc = {}
         self.atributos = {
@@ -34,17 +33,10 @@ class XMLHandler(ContentHandler):
     def get_tags(self):
         return self.dicc
 
-"""
-CLASE ECHO HANDLER
-"""
-dicc = {}
-formato = '%Y-%m-%d %H:%M:%S'
-form_log = time.strftime('%Y%m%d%H%M%S')
-
 
 class EchoHandler(SocketServer.DatagramRequestHandler):
     """
-    Echo server class
+    CLASE ECHO HANDLER
     """
     def handle(self):
         while 1:
@@ -54,7 +46,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 break
             rec_ip = self.client_address[0]
             rec_puerto = self.client_address[1]
-            self.log_rec(rec_ip, rec_puerto, line)
+            Log.log_rec(rec_ip, rec_puerto, line, f_log)
 
             # Ver si el método llegado es correcto
             metodo = line.split()[0]
@@ -62,7 +54,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
 
             if metodo not in metodos_SIP:
                 line_send = 'SIP/2.0 405 Method Not Allowed\r\n'
-                self.log_send(rec_ip, rec_puerto, line_send)
+                Log.log_send(rec_ip, rec_puerto, line_send, f_log)
                 self.wfile.write(line_send + "\r\n")
 
             else:
@@ -77,7 +69,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         expires = int(line.split()[4])
                     except ValueError:
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        self.log_send(rec_ip, rec_puerto, line_send)
+                        Log.log_send(rec_ip, rec_puerto, line_send, f_log)
                         self.wfile.write(line_send + "\r\n")
                     sip_v = line.split()[2]
 
@@ -108,13 +100,13 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
 
                         self.register2file()
                         line_send = 'SIP/2.0 200 OK\r\n'
-                        self.log_send(rec_ip, rec_puerto, line_send)
+                        Log.log_send(rec_ip, rec_puerto, line_send, f_log)
                         self.wfile.write(line_send + "\r\n")
 
                     # Si la petición no está bien formada
                     else:
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        self.log_send(rec_ip, rec_puerto, line_send)
+                        Log.log_send(rec_ip, rec_puerto, line_send, f_log)
                         self.wfile.write(line_send + "\r\n")
 
                 # Si el método es INVITE, ACK o BYE
@@ -137,11 +129,14 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         if registrado == 1:
                             ip_send = dicc[name][0]
                             p_send = int(dicc[name][1])
-                                            # ----> pep8 mal
-                            my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                            my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                            sock1 = socket.AF_INET
+                            sock2 = socket.SOCK_DGRAM
+                            my_socket = socket.socket(sock1, sock2)
+                            sock3 = socket.SOL_SOCKET
+                            sock4 = socket.SO_REUSEADDR
+                            my_socket.setsockopt(sock3, sock4, 1)
                             my_socket.connect((ip_send, p_send))
-                            self.log_send(ip_send, p_send, line)
+                            Log.log_send(ip_send, p_send, line, f_log)
                             my_socket.send(line + '\r\n')
 
                             # Si es INVITE o BYE espero recibir
@@ -150,9 +145,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                 try:
                                     # Recibo respuesta
                                     data = my_socket.recv(1024)
-                                    self.log_rec(ip_send, p_send, data)
-                                    # La reenvío al que solicitó el invite o bye
-                                    self.log_send(rec_ip, rec_puerto, data)
+                                    Log.log_rec(ip_send, p_send, data, f_log)
+                                    # Lo reenvío al cliente
+                                    Log.log_send(rec_ip, rec_puerto, data, f_log)
                                     self.wfile.write(data + "\r\n")
                                 except socket.error:
                                     line_log = "Error: No server listening at "
@@ -160,25 +155,25 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                     line_log += str(p_send) + "\r\n"
                                     print line_log
                                     # log
-                                    log = open(xml["log_path"], 'a')
+                                    log = open(f_log, 'a')
                                     log.write(form_log + ' ' + line_log)
                                     log.close()
-                                    # Le envío un 400 Bad Request al que envía el invite o bye
+                                    # Le envío un 400 Bad Request al cliente
                                     line_send = 'SIP/2.0 400 Bad Request\r\n'
-                                    self.log_send(rec_ip, rec_puerto, line_send)
+                                    Log.log_send(rec_ip, rec_puerto, line_send, f_log)
                                     self.wfile.write(line_send + "\r\n")
                                     break
 
                         # Si no está registrado o sí lo estaba pero ha expirado
                         else:
                             line_send = 'SIP/2.0 404 User Not Found\r\n'
-                            self.log_send(rec_ip, rec_puerto, line_send)
+                            Log.log_send(rec_ip, rec_puerto, line_send, f_log)
                             self.wfile.write(line_send + "\r\n")
 
                     # Si la petición no está bien formada
                     else:
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        self.log_send(rec_ip, rec_puerto, line_send)
+                        Log.log_send(rec_ip, rec_puerto, line_send, f_log)
                         self.wfile.write(line_send + "\r\n")
 
     """
@@ -204,7 +199,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
         for user in dicc.keys():
             expires = str(dicc[user][3])
             time_now1 = time.gmtime(time.time())
-            day_t_now1 = time.strftime('%Y-%m-%d %H:%M:%S', time_now1)
+            day_t_now1 = time.strftime(formato, time_now1)
             if expires <= day_t_now1:
                 del dicc[user]
                 print "... expira: " + str(user) + "\r"
@@ -220,28 +215,6 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 registrado = 1
                 print str(name) + " sí está registrado...\r"
         return registrado
-
-    """
-    Guardar mensajes de depuración de envío en .log
-    """
-    def log_send(self, ip, puerto, line_send):
-        log = open(xml["log_path"], 'a')
-        send_to = "Sent to " + ip + ":" + str(puerto)
-        print "\n" + send_to
-        line_log = send_to + ": " + line_send.replace('\r\n', ' ') + '\r\n'
-        log.write(form_log + ' ' + line_log)
-        print '\nEnviando: ' + line_send
-
-    """
-    Guardar mensajes de depuración de recibo en .log
-    """
-    def log_rec(self, ip, puerto, line_rec):
-        log = open(xml["log_path"], 'a')
-        rec_from = 'Received from ' + ip + ":" + str(puerto)
-        print "\n" + rec_from
-        line_log = rec_from + ": " + line_rec.replace('\r\n', ' ') + '\r\n'
-        log.write(form_log + ' ' + line_log)
-        print "\nRecibido -- " + line_rec
 
 
 if __name__ == "__main__":
@@ -280,6 +253,15 @@ if __name__ == "__main__":
     xml = sHandler.get_tags()
 
     """
+    """
+    dicc = {}
+    formato = '%Y-%%Y-%m-%d %H:%M:%S'
+    # log, Herencia del cliente
+    Log = Log()
+    f_log = xml["log_path"]
+    form_log = time.strftime('%Y%m%d%H%M%S')
+
+    """
     SOCKET
     """
     server_n = xml["server_name"]
@@ -287,21 +269,21 @@ if __name__ == "__main__":
     if server_ip == "":
         server_ip = "127.0.0.1"
     server_p = int(xml["server_puerto"])
-    
+
     try:
         inicio = "Server " + server_n + " listening at port " + str(server_p) + "...\r\n"
         print "\n" + inicio
         # log
-        log = open(xml["log_path"], 'a')
-        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + 'Starting...\r\n')
+        log = open(f_log, 'a')
+        log.write(form_log + ' ' + 'Starting...\r\n')
         log.close()
         # Creamos servidor de eco y escuchamos
         serv = SocketServer.UDPServer((server_ip, server_p), EchoHandler)
         serv.serve_forever()
     except(KeyboardInterrupt):
         # log
-        log = open(xml["log_path"], 'a')
-        log.write(time.strftime('%Y%m%d%H%M%S') + ' ' + '...Finishing.\r\n\r\n')
+        log = open(f_log, 'a')
+        log.write(form_log + ' ' + '...Finishing.\r\n\r\n')
         log.close()
         print "\nTerminando proxy..."
         print "\nFin.\r\n"
