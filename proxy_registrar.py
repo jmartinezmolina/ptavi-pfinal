@@ -34,6 +34,39 @@ class XMLHandler(ContentHandler):
         return self.dicc
 
 
+class Registered():
+    """
+    Leer el fichero registered.txt al iniciar
+    """
+    def leer_registered(self):
+        print "Leyendo base de datos de usuarios registrados...\r"
+        try:
+            fichero = open("registered.txt", "r")
+            db = fichero.readlines()
+            fichero.close()
+            if len(db) > 1:
+                for linea in range(len(db)):
+                    user = str(db[linea].split("\t")[0])
+                    if not user == "Username":
+                        try:
+                            ip = str(db[linea].split("\t")[1])
+                            puerto = str(db[linea].split("\t")[2])
+                            registro = str(db[linea].split("\t")[3])
+                            exp = str(db[linea].split("\t")[4])
+                            expires = exp.split("\r\n")[0]
+                            dicc[user] = [ip, puerto, registro, expires]
+                        except IndexError:
+                            if dicc == {}:
+                                print "... base de datos vacía.\r\n"
+                            break
+                if not dicc == {}:
+                    print "diccionario: " + str(dicc) + "\r"
+            else:
+                print "... base de datos vacía.\r\n"
+        except IOError:
+            print "... base de datos vacía.\r\n"
+
+
 class EchoHandler(SocketServer.DatagramRequestHandler):
     """
     CLASE ECHO HANDLER
@@ -45,8 +78,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             if not line:
                 break
             rec_ip = self.client_address[0]
-            rec_puerto = self.client_address[1]
-            Log.log_rec(rec_ip, rec_puerto, line, f_log)
+            rec_p = self.client_address[1]
+            Log.log_rec(rec_ip, rec_p, line, f_log)
 
             # Ver si el método llegado es correcto
             metodo = line.split()[0]
@@ -54,7 +87,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
 
             if metodo not in metodos_SIP:
                 line_send = 'SIP/2.0 405 Method Not Allowed\r\n'
-                Log.log_send(rec_ip, rec_puerto, line_send, f_log)
+                Log.log_send(rec_ip, rec_p, line_send, f_log)
                 self.wfile.write(line_send + "\r\n")
 
             else:
@@ -69,7 +102,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                         expires = int(line.split()[4])
                     except ValueError:
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        Log.log_send(rec_ip, rec_puerto, line_send, f_log)
+                        Log.log_send(rec_ip, rec_p, line_send, f_log)
                         self.wfile.write(line_send + "\r\n")
                     sip_v = line.split()[2]
 
@@ -100,13 +133,13 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
 
                         self.register2file()
                         line_send = 'SIP/2.0 200 OK\r\n'
-                        Log.log_send(rec_ip, rec_puerto, line_send, f_log)
+                        Log.log_send(rec_ip, rec_p, line_send, f_log)
                         self.wfile.write(line_send + "\r\n")
 
                     # Si la petición no está bien formada
                     else:
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        Log.log_send(rec_ip, rec_puerto, line_send, f_log)
+                        Log.log_send(rec_ip, rec_p, line_send, f_log)
                         self.wfile.write(line_send + "\r\n")
 
                 # Si el método es INVITE, ACK o BYE
@@ -147,7 +180,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                     data = my_socket.recv(1024)
                                     Log.log_rec(ip_send, p_send, data, f_log)
                                     # Lo reenvío al cliente
-                                    Log.log_send(rec_ip, rec_puerto, data, f_log)
+                                    Log.log_send(rec_ip, rec_p, data, f_log)
                                     self.wfile.write(data + "\r\n")
                                 except socket.error:
                                     line_log = "Error: No server listening at "
@@ -159,21 +192,21 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                     log.write(form_log + ' ' + line_log)
                                     log.close()
                                     # Le envío un 400 Bad Request al cliente
-                                    line_send = 'SIP/2.0 400 Bad Request\r\n'
-                                    Log.log_send(rec_ip, rec_puerto, line_send, f_log)
-                                    self.wfile.write(line_send + "\r\n")
+                                    l_send = 'SIP/2.0 400 Bad Request\r\n'
+                                    Log.log_send(rec_ip, rec_p, l_send, f_log)
+                                    self.wfile.write(l_send + "\r\n")
                                     break
 
                         # Si no está registrado o sí lo estaba pero ha expirado
                         else:
                             line_send = 'SIP/2.0 404 User Not Found\r\n'
-                            Log.log_send(rec_ip, rec_puerto, line_send, f_log)
+                            Log.log_send(rec_ip, rec_p, line_send, f_log)
                             self.wfile.write(line_send + "\r\n")
 
                     # Si la petición no está bien formada
                     else:
                         line_send = 'SIP/2.0 400 Bad Request\r\n'
-                        Log.log_send(rec_ip, rec_puerto, line_send, f_log)
+                        Log.log_send(rec_ip, rec_p, line_send, f_log)
                         self.wfile.write(line_send + "\r\n")
 
     """
@@ -255,7 +288,7 @@ if __name__ == "__main__":
     """
     """
     dicc = {}
-    formato = '%Y-%%Y-%m-%d %H:%M:%S'
+    formato = '%Y-%m-%d %H:%M:%S'
     # log, Herencia del cliente
     Log = Log()
     f_log = xml["log_path"]
@@ -271,8 +304,12 @@ if __name__ == "__main__":
     server_p = int(xml["server_puerto"])
 
     try:
-        inicio = "Server " + server_n + " listening at port " + str(server_p) + "...\r\n"
+        inicio = "Server " + server_n + " listening at port "
+        inicio += str(server_p) + "...\r\n"
         print "\n" + inicio
+        # Leemos la base de datos de usuarios registrados
+        txt = Registered()
+        txt.leer_registered()
         # log
         log = open(f_log, 'a')
         log.write(form_log + ' ' + 'Starting...\r\n')
