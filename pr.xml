@@ -1,0 +1,5 @@
+<config>
+    <server name = "proxy" ip = "127.0.0.1" port = "6002"/>
+    <database path = "database.txt"/>
+    <log path = "log_pr.txt"/>
+</config>
