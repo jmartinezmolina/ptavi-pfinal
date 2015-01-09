@@ -1,0 +1,8 @@
+<config>
+	<account username="yerai@user.com"/>
+	<uaserver ip="127.0.0.1" puerto="5001"/>
+	<rtpaudio puerto="5061"/>
+	<regproxy ip="127.0.0.1" puerto="2020"/>
+	<log path="ua2.log"/>
+	<audio path="cancion.mp3"/>
+</config>
