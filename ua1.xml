@@ -1,0 +1,8 @@
+<config>
+    <account name = "TonySoprano@TheSopranos.com"/>
+    <uaserver serv_ip = "127.0.0.1" serv_port = "6000"/>
+    <rtpaudio rtp_port = "6001"/>
+    <regproxy pr_ip = "127.0.0.1" pr_port = "6002"/>
+    <log path = "log_ua1.txt"/>
+    <audio path = "cancion.mp3"/>
+</config>
