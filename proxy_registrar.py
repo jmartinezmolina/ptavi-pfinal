@@ -54,13 +54,19 @@ class Registered():
                             registro = str(db[linea].split("\t")[3])
                             exp = str(db[linea].split("\t")[4])
                             expires = exp.split("\r\n")[0]
-                            dicc[user] = [ip, puerto, registro, expires]
+                            time_now2 = time.gmtime(time.time())
+                            day_t_now2 = time.strftime(formato, time_now2)
+                            # Mira si ha expirado alguno
+                            if expires > day_t_now2:
+                                dicc[user] = [ip, puerto, registro, expires]
                         except IndexError:
                             if dicc == {}:
                                 print "... base de datos vacía.\r\n"
                             break
-                if not dicc == {}:
+                if dicc:
                     print "diccionario: " + str(dicc) + "\r"
+                else:
+                    print "... base de datos vacía.\r\n"
             else:
                 print "... base de datos vacía.\r\n"
         except IOError:
