@@ -141,14 +141,19 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                             my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                             my_socket.connect((ip_send, p_send))
-                            self.log_send(dicc[name][0], dicc[name][1], line)
+                            self.log_send(ip_send, p_send, line)
                             my_socket.send(line + '\r\n')
 
                             # Si es INVITE o BYE espero recibir
                             if not metodo == "ACK":
                                 # Error si el servidor no está lanzado
                                 try:
+                                    # Recibo respuesta
                                     data = my_socket.recv(1024)
+                                    self.log_rec(ip_send, p_send, data)
+                                    # La reenvío al que solicitó el invite o bye
+                                    self.log_send(rec_ip, rec_puerto, data)
+                                    self.wfile.write(data + "\r\n")
                                 except socket.error:
                                     line_log = "Error: No server listening at "
                                     line_log += dicc[name][0] + " port "
@@ -157,12 +162,12 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                                     # log
                                     log = open(xml["log_path"], 'a')
                                     log.write(form_log + ' ' + line_log)
-                                    raise SystemExit
-                                # Recibo respuesta
-                                self.log_rec(ip_send, p_send, data)
-                                # La reenvío al que solicitó el invite o bye
-                                self.log_send(rec_ip, rec_puerto, data)
-                                self.wfile.write(data + "\r\n")
+                                    log.close()
+                                    # Le envío un 400 Bad Request al que envía el invite o bye
+                                    line_send = 'SIP/2.0 400 Bad Request\r\n'
+                                    self.log_send(rec_ip, rec_puerto, line_send)
+                                    self.wfile.write(line_send + "\r\n")
+                                    break
 
                         # Si no está registrado o sí lo estaba pero ha expirado
                         else:
