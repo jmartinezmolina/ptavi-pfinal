@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-15 -*-
 """
-Programa servido que gestiona el registro y caduciadad de los usuarios
+Programa servidor: Gestiona el registro y caduciadad de los usuarios
 """
 
 import SocketServer
@@ -95,7 +95,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                                 self.wfile.write(data)
                                 send = 1
                         if send == 0:
-                            self.wfile.write("SIP/2.0 404 User Not Found\r\n")
+                            self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
             elif Method == "ACK":
                 name = line[1][4:]
                 send = 0
@@ -111,7 +111,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                         self.wfile.write(data)
                         send = 1
                 if send == 0:
-                    self.wfile.write("SIP/2.0 404 User Not Found\r\n")
+                    self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
             elif Method == "BYE":
                 name = line[1][4:]
                 send = 0
@@ -127,7 +127,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                         self.wfile.write(data)
                         send = 1
                 if send == 0:
-                    self.wfile.write("SIP/2.0 404 User Not Found\r\n")
+                    self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
 
             Log = open(fich_xml[2]["path"], "a")
             Log.write(time.strftime('%Y­%m­%d%H%M%S') + " Received from " + name + ": " + Method + ("\r\n"))
