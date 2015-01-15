@@ -74,9 +74,9 @@ class XMLHandler(ContentHandler):
         return self.dicc
 
 
-class EchoHandler(SocketServer.DatagramRequestHandler):
+class SipHandler(SocketServer.DatagramRequestHandler):
     """
-    Echo server class
+    SIP server class
     """
     def handle(self):
         # Recibimos del cliente
@@ -92,18 +92,14 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             print 'Recibo: ' + metodo
             if metodo == 'INVITE':
                 #Mando las respuestas al INVITE
-                respuesta = "SIP/2.0 100 Trying\r\n"
-                respuesta = respuesta + "SIP/2.0 180 Ringing\r\n"
-                respuesta = respuesta + 'SIP/2.0 200 OK\r\n'
-                respuesta = respuesta + 'Content-Type: application/sdp\r\n'
-                respuesta = respuesta + '\r\n'
-                respuesta = respuesta + 'v=0\r\n'
-                respuesta = respuesta + 'o=' + ficheroXML['username'] + ' ' +\
-                    ficheroXML['ip'] + '\r\n'
-                respuesta = respuesta + 's=misesion\r\n'
-                respuesta = respuesta + 't=0\r\n'
-                respuesta = respuesta + 'm=audio ' +\
-                    str(ficheroXML['puertortp']) + ' RTP\r\n'
+                respuesta = "SIP/2.0 100 Trying\r\n\r\n"
+                respuesta += "SIP/2.0 180 Ringing\r\n\r\n"
+                respuesta += 'SIP/2.0 200 OK\r\n'
+                respuesta += 'Content-Type: application/sdp\r\n\r\n'
+                respuesta += 'v=0\r\n' + 'o=' + ficheroXML['username']
+                respuesta += ' ' + ficheroXML['ip'] + '\r\n'
+                respuesta += 's=misesion\r\n' + 't=0\r\n' + 'm=audio '
+                respuesta += str(ficheroXML['puertortp']) + ' RTP\r\n\r\n'
                 self.wfile.write(respuesta)
                 print 'Respondemos al INVITE'
                 # sacamos los datos y los guardamos en diccionario
@@ -129,7 +125,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             elif metodo == 'BYE':
                 #Mando la confirmacion de haber recibido el BYE
                 print 'Enviamos OK del BYE'
-                respuesta = "SIP/2.0 200 OK\r\n"
+                respuesta = "SIP/2.0 200 OK\r\n\r\n"
                 self.wfile.write(respuesta)
                 mensaje_log = 'Sent to ' + ip[0] + ':' + str(ip[1]) + ': ' + \
                               saltos_a_blancos(respuesta) + " [..]"
@@ -137,8 +133,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             else:
                 #Respuestas de error
                 print 'Envio error'
-                respuesta = "SIP/2.0 400 Bad Request\r\n"
-                respuesta = respuesta + "SIP/2.0 405 Method Not Allowed\r\n"
+                respuesta = "SIP/2.0 400 Bad Request\r\n\r\n"
+                respuesta = respuesta + "SIP/2.0 405 Method Not Allowed\r\n\r\n"
                 self.wfile.write(respuesta)
                 mensaje_log = 'Sent to ' + ip[0] + ':' + str(ip[1]) + ': ' + \
                     saltos_a_blancos(respuesta) + " [..]"
@@ -170,7 +166,7 @@ if __name__ == "__main__":
     IP = ficheroXML['ip']
 
     # Preparamos el socket server
-    serv = SocketServer.UDPServer((IP, int(Puerto)), EchoHandler)
+    serv = SocketServer.UDPServer((IP, int(Puerto)), SipHandler)
 
     print "Empezamos..."
     try:
