@@ -58,25 +58,25 @@ uaserver.escribir_log(mensaje_log, ficheroXML['file_log'])
 if metodo == 'REGISTER':
     print "Envio Register"
     mensaje = metodo + ' sip:' + usuario + ':' + puerto_UA + ' SIP/2.0\r\n' + \
-        'Expires: ' + opcion + '\r\n'
+        'Expires: ' + opcion + '\r\n\r\n'
     mensaje_log = 'Sent to ' + IP_Proxy + ':' + Puerto_Proxy + ': ' + \
                   uaserver.saltos_a_blancos(mensaje) + " [..]"
     uaserver.escribir_log(mensaje_log, ficheroXML['file_log'])
 elif metodo == 'INVITE':
     print "Envio INVITE"
     mensaje = metodo + ' sip:' + opcion + ' SIP/2.0\r\n' + \
-        'Content-Type: application/sdp\r\n' + '\r\n' + \
+        'Content-Type: application/sdp\r\n\r\n' + \
         'v=0\r\n' + \
         'o=' + usuario + ' ' + IP_UA + '\r\n' + \
         's=misesion\r\n' + \
         't=0\r\n' + \
-        'm=audio ' + puertortp + ' RTP\r\n'
+        'm=audio ' + puertortp + ' RTP\r\n\r\n'
     mensaje_log = 'Sent to ' + IP_Proxy + ':' + Puerto_Proxy + ': ' + \
                   uaserver.saltos_a_blancos(mensaje) + " [..]"
     uaserver.escribir_log(mensaje_log, ficheroXML['file_log'])
 elif metodo == 'BYE':
     print "Envio BYE"
-    mensaje = metodo + ' sip:' + opcion + ' SIP/2.0\r\n'
+    mensaje = metodo + ' sip:' + opcion + ' SIP/2.0\r\n\r\n'
     mensaje_log = 'Sent to ' + IP_Proxy + ':' + Puerto_Proxy + ': ' + \
                   uaserver.saltos_a_blancos(mensaje) + " [..]"
     uaserver.escribir_log(mensaje_log, ficheroXML['file_log'])
@@ -110,7 +110,7 @@ if respuesta == '100 Trying\r\n':
     print "Mandamos ack"
     iprtp = data.split('\r\n')[6].split(' ')[1]
     puertortp = data.split('\r\n')[9].split(' ')[1]
-    mensaje = 'ACK sip:' + opcion + ' SIP/2.0' + '\r\n'
+    mensaje = 'ACK sip:' + opcion + ' SIP/2.0' + '\r\n\r\n'
     my_socket.send(mensaje)
     mensaje_log = 'Sent to ' + IP_Proxy + ':' + Puerto_Proxy + ': ' + \
                   uaserver.saltos_a_blancos(mensaje) + " [..]"
