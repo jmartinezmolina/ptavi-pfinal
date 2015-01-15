@@ -39,7 +39,7 @@ if Method == "REGISTER":
 
     Log.write(time.strftime('%Y­%m­%d%H%M%S') + " Starting...\r\n")
     Line = "REGISTER sip:" + my_name + ":" + fich_xml[1]["serv_port"] + \
-    " SIP/2.0\r\n" + "Expires: " + Options
+    " SIP/2.0\r\n" + "Expires: " + Options + "\r\n"
     Log.write(time.strftime('%Y­%m­%d%H%M%S') + LogSent + "REGISTER "+ ("\r\n"))
 elif Method == "INVITE":
     Line = "INVITE sip:" + Options + " SIP/2.0\r\n" + \
