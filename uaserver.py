@@ -13,9 +13,9 @@ from uaclient import XMLHandler
 from uaclient import Log
 
 
-class EchoHandler(SocketServer.DatagramRequestHandler):
+class SipHandler(SocketServer.DatagramRequestHandler):
     """
-    CLASE ECHO HANDLER
+    CLASE SIP HANDLER
     """
     def handle(self):
         while 1:
@@ -163,7 +163,7 @@ if __name__ == "__main__":
         log.write(form_log + ' ' + 'Starting...\r\n')
         log.close()
         # Creamos servidor de eco y escuchamos
-        serv = SocketServer.UDPServer((server_ip, server_p), EchoHandler)
+        serv = SocketServer.UDPServer((server_ip, server_p), SipHandler)
         serv.serve_forever()
     except(KeyboardInterrupt):
         # log
