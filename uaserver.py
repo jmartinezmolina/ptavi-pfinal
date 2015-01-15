@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-15 -*-
 """
-Clase (y programa principal) para un servidor de eco en UDP simple
+Clase (y programa principal) para un servidor SIP
 """
 
 import time
@@ -20,38 +20,28 @@ class XMLHandler(ContentHandler):
     def startElement(self, name, attrs):
 
         if name == "account":
-
             self.account = {}
             self.account["name"] = attrs.get("name", "")
             self.List.append(self.account)
-
         elif name == "uaserver":
-
             self.uaserver = {}
             self.uaserver["serv_ip"] = attrs.get("serv_ip", "")
             self.uaserver["serv_port"] = attrs.get("serv_port", "")
             self.List.append(self.uaserver)
-
         elif name == "rtpaudio":
-
             self.rtpaudio = {}
             self.rtpaudio['rtp_port'] = attrs.get("rtp_port", "")
             self.List.append(self.rtpaudio)
-
         elif name == "regproxy":
-
             self.regproxy = {}
             self.regproxy["pr_ip"] = attrs.get("pr_ip", "")
             self.regproxy["pr_port"] = attrs.get("pr_port", "")
             self.List.append(self.regproxy)
-
         elif name == "log":
-
             self.log = {}
             self.log["path"] = attrs.get("path", "")
             self.List.append(self.log)
         elif name == "audio":
-
             self.audio = {}
             self.audio["path"] = attrs.get("path", "")
             self.List.append(self.audio)
@@ -60,9 +50,9 @@ class XMLHandler(ContentHandler):
         return self.List
 
 
-class EchoHandler(SocketServer.DatagramRequestHandler):
+class SipHandler(SocketServer.DatagramRequestHandler):
     """
-    Echo server class
+    SIP server class
     """
 
     def handle(self):
@@ -76,9 +66,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             method = line[0]
 
             if method == "INVITE":
-
-                self.wfile.write("SIP/2.0 100 Trying\r\n")
-                self.wfile.write("SIP/2.0 180 Ring\r\n")
+                self.wfile.write("SIP/2.0 100 Trying\r\n\r\n")
+                self.wfile.write("SIP/2.0 180 Ring\r\n\r\n")
                 self.wfile.write("SIP/2.0 200 OK\r\n")
                 self.wfile.write("Content-Type: application/sdp\r\n\r\n")
                 self.wfile.write("v=0\r\n")
@@ -87,7 +76,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 self.wfile.write("o=" + fich_xml[0]["name"] + " " + Dir + "\r\n")
                 self.wfile.write("s=sesionamigo\r\n")
                 self.wfile.write("t=0\r\n")
-                self.wfile.write("m=audio " + port_rtp + " RTP\r\n")
+                self.wfile.write("m=audio " + port_rtp + " RTP\r\n\r\n")
                 IP_rtp = line[4].split("\r\n")[0]
                 port = line[5]
                 name = line[3].split("\r\n")[3][2:]
@@ -102,9 +91,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     print "EJECUTO Mp32rtp", aEjecutar
                     os.system(aEjecutar)
             elif method == "BYE":
-                self.wfile.write("SIP/2.0 200 OK\r\n")
+                self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
             else:
-                self.wfile.write("SIP/2.0 405 Method Not Allowed\r\n")
+                self.wfile.write("SIP/2.0 405 Method Not Allowed\r\n\r\n")
 
             Log = open(fich_xml[4]["path"], "a")
             if method == "INVITE":
@@ -131,7 +120,7 @@ if __name__ == "__main__":
         sys.exit("Usage: python uaserver.py config")
     fich_xml = cHandler.get_tags()
     Dir = fich_xml[1]
-    serv = SocketServer.UDPServer((Dir["serv_ip"], int(Dir["serv_port"])), EchoHandler)
+    serv = SocketServer.UDPServer((Dir["serv_ip"], int(Dir["serv_port"])), SipHandler)
     SDP = {}
     print "Listening...."
     serv.serve_forever()
